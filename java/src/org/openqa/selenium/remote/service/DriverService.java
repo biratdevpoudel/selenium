@@ -19,8 +19,10 @@ package org.openqa.selenium.remote.service;
 
 import com.google.common.collect.ImmutableMap;
 
+import com.google.common.io.ByteStreams;
 import org.openqa.selenium.Beta;
 import org.openqa.selenium.Capabilities;
+import org.openqa.selenium.ImmutableCapabilities;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.internal.Require;
 import org.openqa.selenium.net.PortProber;
@@ -30,6 +32,7 @@ import org.openqa.selenium.os.ExecutableFinder;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -45,6 +48,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Logger;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -58,10 +62,14 @@ import static org.openqa.selenium.concurrent.ExecutorServices.shutdownGracefully
  * In addition to this, it is supposed that the driver server implements /shutdown hook that is
  * used to stop the server.
  */
-public class DriverService implements Closeable, DriverServiceInfo {
+public class DriverService implements Closeable {
 
+  public static final String LOG_NULL = "/dev/null";
+  public static final String LOG_STDERR = "/dev/stderr";
+  public static final String LOG_STDOUT = "/dev/stdout";
   private static final String NAME = "Driver Service Executor";
   protected static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(20);
+  private static final Logger LOG = Logger.getLogger(DriverService.class.getName());
 
   private final ExecutorService executorService = Executors.newFixedThreadPool(2, r -> {
     Thread thread = new Thread(r);
@@ -139,7 +147,23 @@ public class DriverService implements Closeable, DriverServiceInfo {
 
   protected URL getUrl(int port) throws IOException {
     return new URL(String.format("http://localhost:%d", port));
- }
+  }
+
+  protected Capabilities getDefaultDriverOptions() {
+    return new ImmutableCapabilities();
+  }
+
+  protected String getDriverName() {
+    return null;
+  }
+
+  protected String getDriverProperty() {
+    return null;
+  }
+
+  protected File getDriverExecutable() {
+    return null;
+  }
 
   /**
    * @return The base URL for the managed driver server.
@@ -178,8 +202,12 @@ public class DriverService implements Closeable, DriverServiceInfo {
         return;
       }
       if (this.executable == null) {
-        this.executable = DriverFinder.getPath(this);
+        if (getDefaultDriverOptions().getBrowserName().isEmpty()) {
+          throw new WebDriverException("Driver executable is null and browser name is not set.");
+        }
+        this.executable = DriverFinder.getPath(this, getDefaultDriverOptions());
       }
+      LOG.fine(String.format("Starting driver at %s with %s", this.executable, this.args));
       process = new CommandLine(this.executable, args.toArray(new String[]{}));
       process.setEnvironmentVariables(environment);
       process.copyOutputTo(getOutputStream());
@@ -272,7 +300,7 @@ public class DriverService implements Closeable, DriverServiceInfo {
       if (getOutputStream() instanceof FileOutputStream) {
         try {
           getOutputStream().close();
-        } catch (IOException e) {
+        } catch (IOException ignore) {
         }
       }
     } finally {
@@ -316,6 +344,7 @@ public class DriverService implements Closeable, DriverServiceInfo {
     private Map<String, String> environment = emptyMap();
     private File logFile;
     private Duration timeout;
+    private OutputStream logOutputStream;
 
     /**
      * Provides a measure of how strongly this {@link DriverService} supports the given
@@ -392,6 +421,11 @@ public class DriverService implements Closeable, DriverServiceInfo {
       return (B) this;
     }
 
+    public B withLogOutput(OutputStream output) {
+      this.logOutputStream = output;
+      return (B) this;
+    }
+
     protected File getLogFile() {
       return logFile;
     }
@@ -410,6 +444,40 @@ public class DriverService implements Closeable, DriverServiceInfo {
       return DEFAULT_TIMEOUT;
     }
 
+    protected OutputStream getLogOutput(String logProperty) {
+      if(logOutputStream != null) {
+        return logOutputStream;
+      }
+
+      try {
+        File logFileLocation = getLogFile();
+        String logLocation;
+
+        if (logFileLocation == null) {
+          logLocation = System.getProperty(logProperty);
+        } else {
+          logLocation = logFileLocation.getAbsolutePath();
+        }
+
+        if (logLocation == null) {
+          return System.err;
+        }
+
+        switch (logLocation) {
+          case LOG_STDOUT:
+            return System.out;
+          case LOG_STDERR:
+            return System.err;
+          case LOG_NULL:
+            return ByteStreams.nullOutputStream();
+          default:
+            return new FileOutputStream(logLocation);
+        }
+      } catch (FileNotFoundException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     /**
      * Creates a new service to manage the driver server. Before creating a new service, the
      * builder will find a port for the server to listen to.
@@ -425,6 +493,7 @@ public class DriverService implements Closeable, DriverServiceInfo {
         timeout = getDefaultTimeout();
       }
 
+      loadSystemProperties();
       List<String> args = createArgs();
 
       DS service = createDriverService(exe, port, timeout, args, environment);
@@ -432,6 +501,8 @@ public class DriverService implements Closeable, DriverServiceInfo {
 
       return service;
     }
+
+    protected abstract void loadSystemProperties();
 
     protected abstract List<String> createArgs();
 

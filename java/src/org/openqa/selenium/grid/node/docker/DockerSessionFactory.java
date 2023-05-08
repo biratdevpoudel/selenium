@@ -135,6 +135,11 @@ public class DockerSessionFactory implements SessionFactory {
   }
 
   @Override
+  public Capabilities getStereotype() {
+    return stereotype;
+  }
+
+  @Override
   public boolean test(Capabilities capabilities) {
     return slotMatcher.matches(stereotype, capabilities);
   }
@@ -314,7 +319,8 @@ public class DockerSessionFactory implements SessionFactory {
     // Passing env vars set to the child container
     Map<String, String> seEnvVars = System.getenv();
     seEnvVars.entrySet().stream()
-      .filter(entry -> entry.getKey().startsWith("SE_"))
+      .filter(entry -> entry.getKey().startsWith("SE_") ||
+                       entry.getKey().equalsIgnoreCase("LANGUAGE"))
       .forEach(entry -> envVars.put(entry.getKey(), entry.getValue()));
     return envVars;
   }

@@ -38,6 +38,11 @@ public enum Platform {
     public Platform family() {
       return null;
     }
+
+    @Override
+    public String toString() {
+      return "windows";
+    }
   },
 
   /**
@@ -131,6 +136,11 @@ public enum Platform {
     @Override
     public Platform family() {
       return null;
+    }
+
+    @Override
+    public String toString() {
+      return "mac";
     }
   },
 
@@ -257,6 +267,18 @@ public enum Platform {
     }
   },
 
+  VENTURA("ventura", "os x 13.0", "macos 13.0") {
+    @Override
+    public Platform family() {
+      return MAC;
+    }
+
+    @Override
+    public String toString() {
+      return "macOS 13.0";
+    }
+  },
+
   /**
    * Many platforms have UNIX traits, amongst them LINUX, Solaris and BSD.
    */
@@ -271,6 +293,11 @@ public enum Platform {
     @Override
     public Platform family() {
       return UNIX;
+    }
+
+    @Override
+    public String toString() {
+      return "linux";
     }
   },
 
@@ -299,6 +326,12 @@ public enum Platform {
     public boolean is(Platform compareWith) {
       return this == compareWith;
     }
+
+    @Override
+    public String toString() {
+      return "any";
+    }
+
   };
 
   private static Platform current;

@@ -72,6 +72,43 @@ class DefaultSlotMatcherTest {
   }
 
   @Test
+  void matchDownloadsForRegularTestMatchingAgainstADownloadAwareNode() {
+    Capabilities stereotype = new ImmutableCapabilities(
+      CapabilityType.BROWSER_NAME, "chrome",
+      "se:downloadsEnabled", true
+    );
+    Capabilities capabilities = new ImmutableCapabilities(
+      CapabilityType.BROWSER_NAME, "chrome"
+    );
+    assertThat(slotMatcher.matches(stereotype, capabilities)).isTrue();
+  }
+
+  @Test
+  void matchDownloadsForAutoDownloadTestMatchingAgainstADownloadAwareNode() {
+    Capabilities stereotype = new ImmutableCapabilities(
+      CapabilityType.BROWSER_NAME, "chrome",
+      "se:downloadsEnabled", true
+    );
+    Capabilities capabilities = new ImmutableCapabilities(
+      CapabilityType.BROWSER_NAME, "chrome",
+      "se:downloadsEnabled", true
+    );
+    assertThat(slotMatcher.matches(stereotype, capabilities)).isTrue();
+  }
+
+  @Test
+  void ensureNoMatchFOrDownloadAwareTestMatchingAgainstOrdinaryNode() {
+    Capabilities stereotype = new ImmutableCapabilities(
+      CapabilityType.BROWSER_NAME, "chrome"
+    );
+    Capabilities capabilities = new ImmutableCapabilities(
+      CapabilityType.BROWSER_NAME, "chrome",
+      "se:downloadsEnabled", true
+    );
+    assertThat(slotMatcher.matches(stereotype, capabilities)).isFalse();
+  }
+
+  @Test
   void matchesEmptyBrowser() {
     Capabilities stereotype = new ImmutableCapabilities(
       CapabilityType.BROWSER_NAME, "chrome",
@@ -223,21 +260,6 @@ class DefaultSlotMatcherTest {
       CapabilityType.PLATFORM_NAME, Platform.WINDOWS
     );
     assertThat(slotMatcher.matches(stereotype, capabilities)).isFalse();
-  }
-
-  @Test
-  void matchesWithJsonWireProtocolCaps() {
-    Capabilities stereotype = new ImmutableCapabilities(
-      CapabilityType.BROWSER_NAME, "chrome",
-      CapabilityType.BROWSER_VERSION, "80",
-      CapabilityType.PLATFORM_NAME, Platform.WINDOWS
-    );
-    Capabilities capabilities = new ImmutableCapabilities(
-      CapabilityType.BROWSER_NAME, "chrome",
-      CapabilityType.VERSION, "80",
-      CapabilityType.PLATFORM, Platform.WINDOWS
-    );
-    assertThat(slotMatcher.matches(stereotype, capabilities)).isTrue();
   }
 
   @Test

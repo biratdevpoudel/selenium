@@ -64,6 +64,10 @@ public class DefaultSlotMatcher implements SlotMatcher, Serializable {
       return false;
     }
 
+    if (!managedDownloadsEnabled(stereotype, capabilities)) {
+      return false;
+    }
+
     if (!platformVersionMatch(stereotype, capabilities)) {
       return false;
     }
@@ -92,7 +96,7 @@ public class DefaultSlotMatcher implements SlotMatcher, Serializable {
       // Matching of extension capabilities is implementation independent. Skip them
       .filter(name -> !name.contains(":"))
       // Platform matching is special, we do it later
-      .filter(name -> !"platform".equalsIgnoreCase(name) && !"platformName".equalsIgnoreCase(name))
+      .filter(name -> !"platformName".equalsIgnoreCase(name))
       .map(name -> {
         if (capabilities.getCapability(name) instanceof String) {
           return stereotype.getCapability(name).toString()
@@ -104,6 +108,19 @@ public class DefaultSlotMatcher implements SlotMatcher, Serializable {
       })
       .reduce(Boolean::logicalAnd)
       .orElse(true);
+  }
+
+  private Boolean managedDownloadsEnabled(Capabilities stereotype, Capabilities capabilities) {
+    // First lets check if user wanted a Node with managed downloads enabled
+    Object raw = capabilities.getCapability("se:downloadsEnabled");
+    if (raw == null || !Boolean.parseBoolean(raw.toString())) {
+      // User didn't ask. So lets move on to the next matching criteria
+      return true;
+    }
+    // User wants managed downloads enabled to be done on this Node, let's check the stereotype
+    raw = stereotype.getCapability("se:downloadsEnabled");
+    // Try to match what the user requested
+    return raw != null && Boolean.parseBoolean(raw.toString());
   }
 
   private Boolean platformVersionMatch(Capabilities stereotype, Capabilities capabilities) {

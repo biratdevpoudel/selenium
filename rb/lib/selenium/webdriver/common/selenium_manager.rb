@@ -30,16 +30,29 @@ module Selenium
       BIN_PATH = '../../../../../bin'
 
       class << self
-        # @param [String] driver_name which driver to use.
+        # @param [Options] options browser options.
         # @return [String] the path to the correct driver.
-        def driver_path(driver_name)
-          unless %w[chromedriver geckodriver msedgedriver IEDriverServer].include?(driver_name)
-            msg = "Unable to locate driver with name: #{driver_name}"
-            raise Error::WebDriverError, msg
+        def driver_path(options)
+          message = 'applicable driver not found; attempting to install with Selenium Manager (Beta)'
+          WebDriver.logger.info(message, id: :selenium_manager)
+
+          unless options.is_a?(Options)
+            raise ArgumentError, "SeleniumManager requires a WebDriver::Options instance, not #{options.inspect}"
           end
 
-          location = run("#{binary} --driver #{driver_name}")
-          WebDriver.logger.debug("Driver found at #{location}")
+          command = [binary, '--browser', options.browser_name, '--output', 'json']
+          if options.browser_version
+            command << '--browser-version'
+            command << options.browser_version
+          end
+          if options.respond_to?(:binary) && !options.binary.nil?
+            command << '--browser-path'
+            command << options.binary.gsub('\\', '\\\\\\')
+          end
+          command << '--debug' if WebDriver.logger.debug?
+
+          location = run(*command)
+          WebDriver.logger.debug("Driver found at #{location}", id: :selenium_manager)
           Platform.assert_executable location
 
           location
@@ -63,25 +76,31 @@ module Selenium
               raise Error::WebDriverError, 'Unable to obtain Selenium Manager'
             end
 
-            WebDriver.logger.debug("Selenium Manager found at #{location}")
+            WebDriver.logger.debug("Selenium Manager found at #{location}", id: :selenium_manager)
             location
           end
         end
 
-        def run(command)
-          WebDriver.logger.debug("Executing Process #{command}")
+        def run(*command)
+          WebDriver.logger.debug("Executing Process #{command}", id: :selenium_manager)
 
           begin
-            stdout, stderr, status = Open3.capture3(command)
+            stdout, stderr, status = Open3.capture3(*command)
+            json_output = stdout.empty? ? nil : JSON.parse(stdout)
+            result = json_output&.dig('result', 'message')
           rescue StandardError => e
             raise Error::WebDriverError, "Unsuccessful command executed: #{command}", e.message
           end
 
           if status.exitstatus.positive?
-            raise Error::WebDriverError, "Unsuccessful command executed: #{command}\n#{stdout}#{stderr}"
+            raise Error::WebDriverError, "Unsuccessful command executed: #{command}\n#{result}#{stderr}"
           end
 
-          stdout.gsub("INFO\t", '').strip
+          json_output['logs'].each do |log|
+            WebDriver.logger.send(log['level'].downcase, log['message'], id: :selenium_manager)
+          end
+
+          result
         end
       end
     end # SeleniumManager

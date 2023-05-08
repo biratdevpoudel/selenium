@@ -1,3 +1,38 @@
+## v4.9.1
+
+#### :nail_care: Polish
+
+* Add CDP files for v113 and remove v110
+
+## v4.9.0
+
+#### :nail_care: Polish
+
+* Adding CDP v112 and removing v109
+
+#### :bug: Bug Fix
+
+* Fix: return statement in submit() (#11883)
+* [grid] Refining the UI configuration to allow sub paths work properly.
+* Replace `execSync` with `spawnSync` in `seleniumManager.js` (#11649) (#11873)
+
+#### :rocket: New Feature
+
+* [BiDi] Add Script module commands and types (#11847)
+* Selenium Manager get Browser Version from Options classes
+* Selenium Manager use binary from Browser Options
+
+## v4.8.2
+
+#### :nail_care: Polish
+
+* Add CDP support for v111 and remove v108
+* Using json output with Selenium Manager
+
+#### :bug: Bug Fix
+
+* fix: Using status from response (#11742)
+
 ## v4.8.1
 
 #### :rocket: New Feature
