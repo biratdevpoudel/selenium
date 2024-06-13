@@ -27,7 +27,13 @@ module Selenium
           let(:service_path) { "/path/to/#{Service::EXECUTABLE}" }
 
           before do
-            allow(Platform).to receive(:assert_executable).and_return(true)
+            allow(Platform).to receive(:assert_executable)
+          end
+
+          it 'does not allow log' do
+            expect {
+              described_class.new(log: 'anywhere')
+            }.to raise_exception(Error::WebDriverError, 'Safari Service does not support setting log output')
           end
 
           it 'uses default port and nil path' do
@@ -50,16 +56,19 @@ module Selenium
           end
 
           it 'does not create args by default' do
-            allow(Platform).to receive(:find_binary).and_return(service_path)
-
             service = described_class.new
 
             expect(service.extra_args).to be_empty
           end
 
-          it 'uses provided args' do
-            allow(Platform).to receive(:find_binary).and_return(service_path)
+          it 'does not allow log=' do
+            service = described_class.new
+            expect {
+              service.log = 'anywhere'
+            }.to raise_exception(Error::WebDriverError, 'Safari Service does not support setting log output')
+          end
 
+          it 'uses provided args' do
             service = described_class.new(args: ['--foo', '--bar'])
 
             expect(service.extra_args).to eq ['--foo', '--bar']
@@ -74,6 +83,7 @@ module Selenium
           end
           let(:service_manager) { instance_double(ServiceManager, uri: 'http://example.com') }
           let(:bridge) { instance_double(Remote::Bridge, quit: nil, create_session: {}) }
+          let(:finder) { instance_double(DriverFinder, browser_path?: false, driver_path: '/path/to/driver') }
 
           before do
             allow(Remote::Bridge).to receive(:new).and_return(bridge)
@@ -88,8 +98,7 @@ module Selenium
           end
 
           it 'is created when :url is not provided' do
-            allow(Platform).to receive(:find_binary).and_return('/path/to/safaridriver')
-            allow(Platform).to receive(:assert_executable)
+            allow(DriverFinder).to receive(:new).and_return(finder)
             allow(described_class).to receive(:new).and_return(service)
 
             driver.new
@@ -98,8 +107,7 @@ module Selenium
           end
 
           it 'accepts :service without creating a new instance' do
-            allow(Platform).to receive(:find_binary).and_return('path/to/safaridriver')
-            allow(Platform).to receive(:assert_executable)
+            allow(DriverFinder).to receive(:new).and_return(finder)
             allow(described_class).to receive(:new)
 
             driver.new(service: service)

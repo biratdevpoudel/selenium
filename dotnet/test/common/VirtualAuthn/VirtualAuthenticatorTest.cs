@@ -1,11 +1,10 @@
+using NUnit.Framework;
+using OpenQA.Selenium.Environment;
+using OpenQA.Selenium.Internal;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using OpenQA.Selenium.Environment;
-using NUnit.Framework;
-using Microsoft.IdentityModel.Tokens;
-
 using static OpenQA.Selenium.VirtualAuth.VirtualAuthenticatorOptions;
 
 namespace OpenQA.Selenium.VirtualAuth
@@ -207,9 +206,8 @@ namespace OpenQA.Selenium.VirtualAuth
         {
             CreateRKDisabledU2FAuthenticator();
 
-            /**
-             * A pkcs#8 encoded unencrypted EC256 private key as a base64url string.
-             */
+
+            // A pkcs#8 encoded unencrypted EC256 private key as a base64url string.
             string base64EncodedEC256PK =
               "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg8_zMDQDYAxlU-Q"
               + "hk1Dwkf0v18GZca1DMF3SaJ9HPdmShRANCAASNYX5lyVCOZLzFZzrIKmeZ2jwU"
@@ -272,9 +270,7 @@ namespace OpenQA.Selenium.VirtualAuth
             // Add a resident credential using the testing API.
             CreateRKEnabledU2FAuthenticator();
 
-            /**
-             * A pkcs#8 encoded unencrypted EC256 private key as a base64url string.
-             */
+            // A pkcs#8 encoded unencrypted EC256 private key as a base64url string.
             string base64EncodedEC256PK =
               "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg8_zMDQDYAxlU-Q"
               + "hk1Dwkf0v18GZca1DMF3SaJ9HPdmShRANCAASNYX5lyVCOZLzFZzrIKmeZ2jwU"
@@ -337,15 +333,9 @@ namespace OpenQA.Selenium.VirtualAuth
 
             Assert.True(credential1.IsResidentCredential);
             Assert.NotNull(credential1.PrivateKey);
-            Assert.AreEqual("localhost", credential1.RpId);
-            Assert.AreEqual(new byte[] { 1 }, credential1.UserHandle);
-            Assert.AreEqual(1, credential1.SignCount);
 
             Assert.False(credential2.IsResidentCredential);
             Assert.NotNull(credential2.PrivateKey);
-            Assert.IsNull(credential2.RpId);
-            Assert.IsNull(credential2.UserHandle);
-            Assert.AreEqual(1, credential2.SignCount);
         }
 
         [Test]

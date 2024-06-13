@@ -16,18 +16,21 @@
 // limitations under the License.
 // </copyright>
 
+using OpenQA.Selenium.Interactions;
+using OpenQA.Selenium.Internal;
+using OpenQA.Selenium.VirtualAuth;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using OpenQA.Selenium.Interactions;
-using OpenQA.Selenium.Internal;
-using OpenQA.Selenium.VirtualAuth;
-using Microsoft.IdentityModel.Tokens;
+using System.Threading.Tasks;
 
 namespace OpenQA.Selenium
 {
+    /// <summary>
+    /// A base class representing a driver for a web browser.
+    /// </summary>
     public class WebDriver : IWebDriver, ISearchContext, IJavaScriptExecutor, IFindsElement, ITakesScreenshot, ISupportsPrint, IActionExecutor, IAllowsFileDetection, IHasCapabilities, IHasCommandExecutor, IHasSessionId, ICustomDriverCommandExecutor, IHasVirtualAuthenticator
     {
         /// <summary>
@@ -52,7 +55,18 @@ namespace OpenQA.Selenium
         protected WebDriver(ICommandExecutor executor, ICapabilities capabilities)
         {
             this.executor = executor;
-            this.StartSession(capabilities);
+
+            try
+            {
+                this.StartSession(capabilities);
+            }
+            catch (Exception)
+            {
+                // Failed to start driver session, disposing of driver
+                this.Quit();
+                throw;
+            }
+
             this.elementFactory = new WebElementFactory(this);
             this.network = new NetworkManager(this);
             this.registeredCommands.AddRange(DriverCommand.KnownCommands);
@@ -96,17 +110,7 @@ namespace OpenQA.Selenium
                 return commandResponse.Value.ToString();
             }
 
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value), "Argument 'url' cannot be null.");
-                }
-
-                Dictionary<string, object> parameters = new Dictionary<string, object>();
-                parameters.Add("url", value);
-                this.Execute(DriverCommand.Get, parameters);
-            }
+            set => new Navigator(this).GoToUrl(value);
         }
 
         /// <summary>
@@ -421,11 +425,21 @@ namespace OpenQA.Selenium
             return new TargetLocator(this);
         }
 
+        /// <summary>
+        /// Instructs the driver to change its settings.
+        /// </summary>
+        /// <returns>An <see cref="IOptions"/> object allowing the user to change
+        /// the settings of the driver.</returns>
         public IOptions Manage()
         {
             return new OptionsManager(this);
         }
 
+        /// <summary>
+        /// Instructs the driver to navigate the browser to another location.
+        /// </summary>
+        /// <returns>An <see cref="INavigation"/> object allowing the user to access
+        /// the browser's history and to navigate to a given URL.</returns>
         public INavigation Navigate()
         {
             return new Navigator(this);
@@ -450,7 +464,7 @@ namespace OpenQA.Selenium
         /// <summary>
         /// Registers a set of commands to be executed with this driver instance.
         /// </summary>
-        /// <param name="commands">An <see cref="IReadOnlyDictionary{string, CommandInfo}"/> where the keys are the names of the commands to register, and the values are the <see cref="CommandInfo"/> objects describing the commands.</param>
+        /// <param name="commands">An <see cref="IReadOnlyDictionary{String, CommandInfo}"/> where the keys are the names of the commands to register, and the values are the <see cref="CommandInfo"/> objects describing the commands.</param>
         public void RegisterCustomDriverCommands(IReadOnlyDictionary<string, CommandInfo> commands)
         {
             foreach (KeyValuePair<string, CommandInfo> entry in commands)
@@ -543,7 +557,25 @@ namespace OpenQA.Selenium
         /// <returns>WebDriver Response</returns>
         internal Response InternalExecute(string driverCommandToExecute, Dictionary<string, object> parameters)
         {
-            return this.Execute(driverCommandToExecute, parameters);
+            return Task.Run(() => this.InternalExecuteAsync(driverCommandToExecute, parameters)).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Executes commands with the driver asynchronously
+        /// </summary>
+        /// <param name="driverCommandToExecute">Command that needs executing</param>
+        /// <param name="parameters">Parameters needed for the command</param>
+        /// <returns>A task object representing the asynchronous operation</returns>
+        internal Task<Response> InternalExecuteAsync(string driverCommandToExecute,
+            Dictionary<string, object> parameters)
+        {
+            return this.ExecuteAsync(driverCommandToExecute, parameters);
+        }
+
+        internal Response Execute(string driverCommandToExecute,
+            Dictionary<string, object> parameters)
+        {
+            return Task.Run(() => this.ExecuteAsync(driverCommandToExecute, parameters)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -552,7 +584,7 @@ namespace OpenQA.Selenium
         /// <param name="driverCommandToExecute">A <see cref="DriverCommand"/> value representing the command to execute.</param>
         /// <param name="parameters">A <see cref="Dictionary{K, V}"/> containing the names and values of the parameters of the command.</param>
         /// <returns>A <see cref="Response"/> containing information about the success or failure of the command and any data returned by the command.</returns>
-        protected virtual Response Execute(string driverCommandToExecute, Dictionary<string, object> parameters)
+        protected virtual async Task<Response> ExecuteAsync(string driverCommandToExecute, Dictionary<string, object> parameters)
         {
             Command commandToExecute = new Command(this.sessionId, driverCommandToExecute, parameters);
 
@@ -560,7 +592,7 @@ namespace OpenQA.Selenium
 
             try
             {
-                commandResponse = this.executor.Execute(commandToExecute);
+                commandResponse = await this.executor.ExecuteAsync(commandToExecute).ConfigureAwait(false);
             }
             catch (System.Net.Http.HttpRequestException e)
             {
@@ -582,8 +614,8 @@ namespace OpenQA.Selenium
         /// <summary>
         /// Starts a session with the driver
         /// </summary>
-        /// <param name="desiredCapabilities">Capabilities of the browser</param>
-        protected void StartSession(ICapabilities desiredCapabilities)
+        /// <param name="capabilities">Capabilities of the browser</param>
+        protected void StartSession(ICapabilities capabilities)
         {
             Dictionary<string, object> parameters = new Dictionary<string, object>();
 
@@ -592,10 +624,10 @@ namespace OpenQA.Selenium
             // and end nodes are compliant with the W3C WebDriver Specification,
             // and therefore will already contain all of the appropriate values
             // for establishing a session.
-            RemoteSessionSettings remoteSettings = desiredCapabilities as RemoteSessionSettings;
+            RemoteSessionSettings remoteSettings = capabilities as RemoteSessionSettings;
             if (remoteSettings == null)
             {
-                Dictionary<string, object> matchCapabilities = this.GetCapabilitiesDictionary(desiredCapabilities);
+                Dictionary<string, object> matchCapabilities = this.GetCapabilitiesDictionary(capabilities);
 
                 List<object> firstMatchCapabilitiesList = new List<object>();
                 firstMatchCapabilitiesList.Add(matchCapabilities);
@@ -680,7 +712,6 @@ namespace OpenQA.Selenium
             {
                 this.sessionId = null;
             }
-
             this.executor.Dispose();
         }
 
@@ -786,6 +817,12 @@ namespace OpenQA.Selenium
 
                         case WebDriverResult.NoSuchShadowRoot:
                             throw new NoSuchShadowRootException(errorMessage);
+
+                        case WebDriverResult.DetachedShadowRoot:
+                            throw new DetachedShadowRootException(errorMessage);
+
+                        case WebDriverResult.InsecureCertificate:
+                            throw new InsecureCertificateException(errorMessage);
 
                         default:
                             throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "{0} ({1})", errorMessage, errorResponse.Status));
@@ -995,6 +1032,9 @@ namespace OpenQA.Selenium
             this.authenticatorId = null;
         }
 
+        /// <summary>
+        /// Gets the virtual authenticator ID for this WebDriver instance.
+        /// </summary>
         public string AuthenticatorId { get; }
 
         /// <summary>

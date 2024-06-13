@@ -16,12 +16,14 @@
 // limitations under the License.
 // </copyright>
 
+using OpenQA.Selenium.Internal;
+using OpenQA.Selenium.Internal.Logging;
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using OpenQA.Selenium.Internal;
 
 namespace OpenQA.Selenium.Safari
 {
@@ -31,11 +33,8 @@ namespace OpenQA.Selenium.Safari
     public sealed class SafariDriverService : DriverService
     {
         private const string DefaultSafariDriverServiceExecutableName = "safaridriver";
-        private const string DefaultSafariDriverServiceExecutablePath = "/usr/bin";
 
-        private static readonly Uri SafariDriverDownloadUrl = new Uri("http://apple.com");
-
-        private bool useLegacyProtocol;
+        private readonly static ILogger logger = Log.GetLogger<SafariDriverService>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SafariDriverService"/> class.
@@ -44,23 +43,14 @@ namespace OpenQA.Selenium.Safari
         /// <param name="executableFileName">The file name of the SafariDriver executable.</param>
         /// <param name="port">The port on which the SafariDriver executable should listen.</param>
         private SafariDriverService(string executablePath, string executableFileName, int port)
-            : base(executablePath, port, executableFileName, SafariDriverDownloadUrl)
+            : base(executablePath, port, executableFileName)
         {
         }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether to use the default open-source project
-        /// dialect of the protocol instead of the default dialect compliant with the
-        /// W3C WebDriver Specification.
-        /// </summary>
-        /// <remarks>
-        /// This is only valid for versions of the driver for Safari that target Safari 12
-        /// or later, and will result in an error if used with prior versions of the driver.
-        /// </remarks>
-        public bool UseLegacyProtocol
+        /// <inheritdoc />
+        protected override DriverOptions GetDefaultDriverOptions()
         {
-            get { return this.useLegacyProtocol; }
-            set { this.useLegacyProtocol = value; }
+            return new SafariOptions();
         }
 
         /// <summary>
@@ -71,11 +61,6 @@ namespace OpenQA.Selenium.Safari
             get
             {
                 StringBuilder argsBuilder = new StringBuilder(base.CommandLineArguments);
-                if (this.useLegacyProtocol)
-                {
-                    argsBuilder.Append(" --legacy");
-                }
-
                 return argsBuilder.ToString();
             }
         }
@@ -145,7 +130,10 @@ namespace OpenQA.Selenium.Safari
                         // check.
                         catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
                         {
-                            Console.WriteLine(ex);
+                            if (logger.IsEnabled(LogEventLevel.Trace))
+                            {
+                                logger.Trace(ex.ToString());
+                            }
                         }
                     }
                 }
@@ -160,17 +148,28 @@ namespace OpenQA.Selenium.Safari
         /// <returns>A SafariDriverService that implements default settings.</returns>
         public static SafariDriverService CreateDefaultService()
         {
-            return CreateDefaultService(DefaultSafariDriverServiceExecutablePath);
+            return new SafariDriverService(null, null, PortUtilities.FindFreePort());
         }
 
         /// <summary>
         /// Creates a default instance of the SafariDriverService using a specified path to the SafariDriver executable.
         /// </summary>
-        /// <param name="driverPath">The directory containing the SafariDriver executable.</param>
+        /// <param name="driverPath">The path to the executable or the directory containing the SafariDriver executable.</param>
         /// <returns>A SafariDriverService using a random port.</returns>
         public static SafariDriverService CreateDefaultService(string driverPath)
         {
-            return CreateDefaultService(driverPath, DefaultSafariDriverServiceExecutableName);
+            string fileName;
+            if (File.Exists(driverPath))
+            {
+                fileName = Path.GetFileName(driverPath);
+                driverPath = Path.GetDirectoryName(driverPath);
+            }
+            else
+            {
+                fileName = DefaultSafariDriverServiceExecutableName;
+            }
+
+            return CreateDefaultService(driverPath, fileName);
         }
 
         /// <summary>

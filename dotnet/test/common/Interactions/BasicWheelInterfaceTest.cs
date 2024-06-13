@@ -1,5 +1,5 @@
-using System;
 using NUnit.Framework;
+using System;
 
 namespace OpenQA.Selenium.Interactions
 {
@@ -17,6 +17,17 @@ namespace OpenQA.Selenium.Interactions
             }
             driver.SwitchTo().DefaultContent();
             ((IJavaScriptExecutor)driver).ExecuteScript("window.scrollTo(0, 0)");
+        }
+
+        [Test]
+        public void ShouldSetActiveWheel()
+        {
+            Actions actionProvider = new Actions(driver);
+            actionProvider.SetActiveWheel("test wheel");
+
+            WheelInputDevice device = actionProvider.GetActiveWheel();
+
+            Assert.AreEqual("test wheel", device.DeviceName);
         }
 
         [Test]

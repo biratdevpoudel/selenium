@@ -17,39 +17,131 @@
 // </copyright>
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Text;
 
 namespace OpenQA.Selenium
 {
     /// <summary>
     /// Finds a driver, checks if the provided path exists, if not, Selenium Manager is used.
-    /// This implementation is still in beta, and may change.
+    /// This implementation is still in beta and may change.
     /// </summary>
-    public static class DriverFinder
+    public class DriverFinder
     {
+        private DriverOptions options;
+        private Dictionary<string, string> paths = new Dictionary<string, string>();
+        private const string BrowserPathKey = "browser_path";
+        private const string DriverPathKey = "driver_path";
+
         /// <summary>
-        /// Checks if the driver path exists, else uses Selenium Manager to return it.
+        /// Initializes a new instance of the <see cref="DriverFinder"/> class.
         /// </summary>
-        /// <param name="service">DriverService with the current path.</param>
-        /// <param name="options">DriverOptions with the current browser options.</param>
-        /// <returns>
-        /// The service with a verified driver executable path.
-        /// </returns>
-        public static DriverService VerifyDriverServicePath(DriverService service, DriverOptions options)
+        public DriverFinder(DriverOptions options)
         {
-            string executablePath = Path.Combine(service.DriverServicePath, service.DriverServiceExecutableName);
-            if (File.Exists(executablePath)) return service;
-            try
-            {
-                string driverFullPath = SeleniumManager.DriverPath(options);
-                service.DriverServicePath = Path.GetDirectoryName(driverFullPath);
-                service.DriverServiceExecutableName = Path.GetFileName(driverFullPath);
-                return service;
-            }
-            catch (Exception e)
-            {
-                throw new WebDriverException($"Unable to locate driver with path: {executablePath}, for more information on how to install drivers see https://www.selenium.dev/documentation/webdriver/getting_started/install_drivers/", e);
-            }
+            this.options = options;
         }
+
+        /// <summary>
+        /// Gets the browser path retrieved by Selenium Manager
+        /// </summary>
+        /// <returns>
+        /// The full browser path
+        /// </returns>
+        public string GetBrowserPath()
+        {
+            return BinaryPaths()[BrowserPathKey];
+        }
+
+        /// <summary>
+        /// Gets the driver path retrieved by Selenium Manager
+        /// </summary>
+        /// <returns>
+        /// The full driver path
+        /// </returns>
+        public string GetDriverPath()
+        {
+            return BinaryPaths()[DriverPathKey];
+        }
+
+        public bool HasBrowserPath()
+        {
+            return !string.IsNullOrWhiteSpace(GetBrowserPath());
+        }
+
+        /// <summary>
+        /// Invokes Selenium Manager to get the binaries paths and validates if they exist.
+        /// </summary>
+        /// <returns>
+        /// A Dictionary with the validated browser and driver path. 
+        /// </returns>
+        /// <exception cref="NoSuchDriverException">If one of the paths does not exist.</exception>
+        private Dictionary<string, string> BinaryPaths()
+        {
+            if (paths.ContainsKey(DriverPathKey) && !string.IsNullOrWhiteSpace(paths[DriverPathKey]))
+            {
+                return paths;
+            }
+            Dictionary<string, string> binaryPaths = SeleniumManager.BinaryPaths(CreateArguments());
+            string driverPath = binaryPaths[DriverPathKey];
+            string browserPath = binaryPaths[BrowserPathKey];
+            if (File.Exists(driverPath))
+            {
+                paths.Add(DriverPathKey, driverPath);                
+            }
+            else
+            {
+                throw new NoSuchDriverException($"The driver path is not a valid file: {driverPath}");
+            }
+            if (File.Exists(browserPath))
+            {
+                paths.Add(BrowserPathKey, browserPath);
+            }
+            else
+            {
+                throw new NoSuchDriverException($"The browser path is not a valid file: {browserPath}");
+            }
+            return paths;
+        }
+
+        /// <summary>
+        /// Create arguments to invoke Selenium Manager
+        /// </summary>
+        /// <returns>
+        /// A string with all arguments to invoke Selenium Manager
+        /// </returns>
+        /// <exception cref="NoSuchDriverException"></exception>
+        private string CreateArguments()
+        {
+            StringBuilder argsBuilder = new StringBuilder();
+            argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --browser \"{0}\"", options.BrowserName);
+
+            if (!string.IsNullOrEmpty(options.BrowserVersion))
+            {
+                argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --browser-version {0}", options.BrowserVersion);
+            }
+
+            string browserBinary = options.BinaryLocation;
+            if (!string.IsNullOrEmpty(browserBinary))
+            {
+                argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --browser-path \"{0}\"", browserBinary);
+            }
+
+            if (options.Proxy != null)
+            {
+                if (options.Proxy.SslProxy != null)
+                {
+                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --proxy \"{0}\"", options.Proxy.SslProxy);
+                }
+                else if (options.Proxy.HttpProxy != null)
+                {
+                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, " --proxy \"{0}\"", options.Proxy.HttpProxy);
+                }
+            }
+
+            return argsBuilder.ToString();
+        }
+
     }
 }

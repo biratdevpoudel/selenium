@@ -21,7 +21,7 @@ require_relative 'spec_helper'
 
 module Selenium
   module WebDriver
-    describe Element do
+    describe Element, exclusive: {bidi: false, reason: 'Not yet implemented with BiDi'} do
       it 'clicks' do
         driver.navigate.to url_for('formPage.html')
         expect { driver.find_element(id: 'imageButton').click }.not_to raise_error
@@ -38,6 +38,17 @@ module Selenium
       it 'raises if element is partially covered', except: {browser: %i[safari safari_preview]} do
         driver.navigate.to url_for('click_tests/overlapping_elements.html')
         expect { driver.find_element(id: 'other_contents').click }.to raise_error(Error::ElementClickInterceptedError)
+      end
+
+      it 'raises if element stale' do
+        driver.navigate.to url_for('formPage.html')
+        button = driver.find_element(id: 'imageButton')
+        driver.navigate.refresh
+
+        expect { button.click }.to raise_exception(Error::StaleElementReferenceError,
+                                                   /errors#stale-element-reference-exception/)
+
+        reset_driver!(time: 1) if %i[safari safari_preview].include? GlobalTestEnv.browser
       end
 
       describe '#submit' do
@@ -421,7 +432,7 @@ module Selenium
         end
       end
 
-      it 'returns ARIA role', only: {browser: %i[chrome edge]} do
+      it 'returns ARIA role' do
         driver.navigate.to 'data:text/html,' \
                            "<div role='heading' aria-level='1'>Level 1 Header</div>" \
                            '<h1>Level 1 Header</h1>' \
@@ -431,7 +442,7 @@ module Selenium
         expect(driver.find_element(tag_name: 'h2').aria_role).to eq('alert')
       end
 
-      it 'returns accessible name', only: {browser: %i[chrome edge]} do
+      it 'returns accessible name' do
         driver.navigate.to 'data:text/html,<h1>Level 1 Header</h1>'
         expect(driver.find_element(tag_name: 'h1').accessible_name).to eq('Level 1 Header')
       end

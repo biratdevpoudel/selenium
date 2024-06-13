@@ -16,11 +16,11 @@
 // limitations under the License.
 // </copyright>
 
+using OpenQA.Selenium.Internal;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using OpenQA.Selenium.Internal;
 
 namespace OpenQA.Selenium.Remote
 {
@@ -42,7 +42,7 @@ namespace OpenQA.Selenium.Remote
         internal ReadOnlyDesiredCapabilities(DesiredCapabilities desiredCapabilities)
         {
             IDictionary<string, object> internalDictionary = desiredCapabilities.CapabilitiesDictionary;
-            foreach(KeyValuePair<string, object> keyValuePair in internalDictionary)
+            foreach (KeyValuePair<string, object> keyValuePair in internalDictionary)
             {
                 this.capabilities[keyValuePair.Key] = keyValuePair.Value;
             }

@@ -22,7 +22,7 @@ require_relative '../spec_helper'
 module Selenium
   module WebDriver
     module Firefox
-      describe Driver, exclusive: {browser: :firefox} do
+      describe Driver, exclusive: [{bidi: false, reason: 'Not yet implemented with BiDi'}, {browser: :firefox}] do
         let(:extensions) { '../../../../../../common/extensions/' }
 
         describe '#print_options' do
@@ -44,11 +44,9 @@ module Selenium
                                      page: {width: 30})).to include(magic_number)
           end
 
-          it 'prints full page', except: [{ci: :github,
-                                           platform: :windows,
+          it 'prints full page', except: [{platform: :windows,
                                            reason: 'Some issues with resolution?'},
                                           {platform: :macosx,
-                                           headless: true,
                                            reason: 'showing half resolution of what expected'}] do
             viewport_width = driver.execute_script('return window.innerWidth;')
             viewport_height = driver.execute_script('return window.innerHeight;')

@@ -16,11 +16,11 @@
 // limitations under the License.
 // </copyright>
 
+using OpenQA.Selenium.Chromium;
+using OpenQA.Selenium.Remote;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using OpenQA.Selenium.Remote;
-using OpenQA.Selenium.Chromium;
 
 namespace OpenQA.Selenium.Chrome
 {
@@ -83,7 +83,7 @@ namespace OpenQA.Selenium.Chrome
         /// </summary>
         /// <param name="options">The <see cref="ChromeOptions"/> to be used with the Chrome driver.</param>
         public ChromeDriver(ChromeOptions options)
-            : this(ChromeDriverService.CreateDefaultService(options), options, RemoteWebDriver.DefaultCommandTimeout)
+            : this(ChromeDriverService.CreateDefaultService(), options, RemoteWebDriver.DefaultCommandTimeout)
         {
         }
 

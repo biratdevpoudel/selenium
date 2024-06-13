@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 
 namespace OpenQA.Selenium.Interactions
@@ -67,6 +66,14 @@ namespace OpenQA.Selenium.Interactions
         public int Count
         {
             get { return this.interactions.Count; }
+        }
+
+        /// <summary>
+        /// Gets the input device for this Action sequence.
+        /// </summary>
+        public InputDevice inputDevice
+        {
+            get { return this.inputDevice; }
         }
 
         /// <summary>

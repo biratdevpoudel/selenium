@@ -1,8 +1,11 @@
-using System;
-using System.Reflection;
-using System.IO;
+using Bazel;
 using Newtonsoft.Json;
 using NUnit.Framework;
+using OpenQA.Selenium.Internal;
+using System;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace OpenQA.Selenium.Environment
 {
@@ -20,37 +23,55 @@ namespace OpenQA.Selenium.Environment
 
         private EnvironmentManager()
         {
+            string dataFilePath;
+            Runfiles runfiles = null;
+            try
+            {
+                runfiles = Runfiles.Create();
+                dataFilePath = runfiles.Rlocation("_main/dotnet/test/common/appconfig.json");
+            }
+            catch (FileNotFoundException)
+            {
+                dataFilePath = "appconfig.json";
+            }
             string currentDirectory = this.CurrentDirectory;
-            string defaultConfigFile = Path.Combine(currentDirectory, "appconfig.json");
-            string configFile = TestContext.Parameters.Get<string>("ConfigFile", defaultConfigFile).Replace('/', Path.DirectorySeparatorChar);
 
-            string content = File.ReadAllText(configFile);
+            string content = File.ReadAllText(dataFilePath);
             TestEnvironment env = JsonConvert.DeserializeObject<TestEnvironment>(content);
 
             string activeDriverConfig = System.Environment.GetEnvironmentVariable("ACTIVE_DRIVER_CONFIG") ?? TestContext.Parameters.Get("ActiveDriverConfig", env.ActiveDriverConfig);
             string driverServiceLocation = System.Environment.GetEnvironmentVariable("DRIVER_SERVICE_LOCATION") ?? TestContext.Parameters.Get("DriverServiceLocation", env.DriverServiceLocation);
+
+            string browserLocation = System.Environment.GetEnvironmentVariable("BROWSER_LOCATION") ?? TestContext.Parameters.Get("BrowserLocation", string.Empty);
+
             string activeWebsiteConfig = TestContext.Parameters.Get("ActiveWebsiteConfig", env.ActiveWebsiteConfig);
             DriverConfig driverConfig = env.DriverConfigs[activeDriverConfig];
             WebsiteConfig websiteConfig = env.WebSiteConfigs[activeWebsiteConfig];
+
+            int port = PortUtilities.FindFreePort();
+            websiteConfig.Port = port.ToString();
+
             TestWebServerConfig webServerConfig = env.TestWebServerConfig;
             webServerConfig.CaptureConsoleOutput = TestContext.Parameters.Get<bool>("CaptureWebServerOutput", env.TestWebServerConfig.CaptureConsoleOutput);
             webServerConfig.HideCommandPromptWindow = TestContext.Parameters.Get<bool>("HideWebServerCommandPrompt", env.TestWebServerConfig.HideCommandPromptWindow);
             webServerConfig.JavaHomeDirectory = TestContext.Parameters.Get("WebServerJavaHome", env.TestWebServerConfig.JavaHomeDirectory);
+            webServerConfig.Port = websiteConfig.Port;
 
-            this.driverFactory = new DriverFactory(driverServiceLocation);
+            this.driverFactory = new DriverFactory(driverServiceLocation, browserLocation);
             this.driverFactory.DriverStarting += OnDriverStarting;
 
-            Assembly driverAssembly = null;
-            try
+            // Search for the driver type in the all assemblies,
+            // bazel uses unpredictable assembly names to execute tests
+            driverType = AppDomain.CurrentDomain.GetAssemblies()
+                .Reverse()
+                .Select(assembly => assembly.GetType(driverConfig.DriverTypeName))
+                .FirstOrDefault(t => t != null);
+
+            if (driverType == null)
             {
-                driverAssembly = Assembly.Load(driverConfig.AssemblyName);
-            }
-            catch (FileNotFoundException)
-            {
-                driverAssembly = Assembly.GetExecutingAssembly();
+                throw new ArgumentOutOfRangeException($"Unable to find driver type {driverConfig.DriverTypeName}");
             }
 
-            driverType = driverAssembly.GetType(driverConfig.DriverTypeName);
             browser = driverConfig.BrowserValue;
             remoteCapabilities = driverConfig.RemoteCapabilities;
 
@@ -116,7 +137,33 @@ namespace OpenQA.Selenium.Environment
             }
             else
             {
-                projectRoot += "/selenium";
+                projectRoot += "/_main";
+            }
+
+            // Find selenium-manager binary.
+            try
+            {
+                string managerFilePath = "";
+                runfiles ??= Runfiles.Create();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    managerFilePath = runfiles.Rlocation("_main/dotnet/src/webdriver/manager/windows/selenium-manager.exe");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    managerFilePath = runfiles.Rlocation("_main/dotnet/src/webdriver/manager/linux/selenium-manager");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    managerFilePath = runfiles.Rlocation("_main/dotnet/src/webdriver/manager/macos/selenium-manager");
+                }
+
+                System.Environment.SetEnvironmentVariable("SE_MANAGER_PATH", managerFilePath);
+            }
+            catch (FileNotFoundException)
+            {
+                // Use the default one.
             }
 
             webServer = new TestWebServer(projectRoot, webServerConfig);
@@ -139,10 +186,7 @@ namespace OpenQA.Selenium.Environment
             {
                 webServer.Stop();
             }
-            if (driver != null)
-            {
-                driver.Quit();
-            }
+            CloseCurrentDriver();
         }
 
         public event EventHandler<DriverStartingEventArgs> DriverStarting;
@@ -163,11 +207,6 @@ namespace OpenQA.Selenium.Environment
         public Browser Browser
         {
             get { return browser; }
-        }
-
-        public string DriverServiceDirectory
-        {
-            get { return this.driverFactory.DriverServicePath; }
         }
 
         public string CurrentDirectory

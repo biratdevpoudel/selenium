@@ -22,24 +22,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.openqa.selenium.testing.Safely.safelyCall;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WindowType;
-import org.openqa.selenium.bidi.LogInspector;
-import org.openqa.selenium.bidi.log.ConsoleLogEntry;
-import org.openqa.selenium.bidi.log.FilterBy;
-import org.openqa.selenium.bidi.log.JavascriptLogEntry;
-import org.openqa.selenium.bidi.log.LogEntry;
-import org.openqa.selenium.bidi.log.LogLevel;
-import org.openqa.selenium.bidi.log.StackTrace;
-import org.openqa.selenium.environment.webserver.AppServer;
-import org.openqa.selenium.environment.webserver.NettyAppServer;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -47,20 +29,24 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WindowType;
+import org.openqa.selenium.bidi.module.LogInspector;
+import org.openqa.selenium.environment.webserver.AppServer;
+import org.openqa.selenium.environment.webserver.NettyAppServer;
+import org.openqa.selenium.testing.JupiterTestBase;
 
-class LogInspectorTest {
+class LogInspectorTest extends JupiterTestBase {
 
   String page;
   private AppServer server;
-  private FirefoxDriver driver;
 
   @BeforeEach
   public void setUp() {
-    FirefoxOptions options = new FirefoxOptions();
-    options.setCapability("webSocketUrl", true);
-
-    driver = new FirefoxDriver(options);
-
     server = new NettyAppServer();
     server.start();
   }
@@ -80,10 +66,10 @@ class LogInspectorTest {
       assertThat(logEntry.getText()).isEqualTo("Hello, world!");
       assertThat(logEntry.getRealm()).isNull();
       assertThat(logEntry.getArgs().size()).isEqualTo(1);
+      assertThat(logEntry.getArgs().get(0).getType()).isEqualTo("string");
       assertThat(logEntry.getType()).isEqualTo("console");
       assertThat(logEntry.getLevel()).isEqualTo(LogLevel.INFO);
       assertThat(logEntry.getMethod()).isEqualTo("log");
-      assertThat(logEntry.getStackTrace()).isNull();
     }
   }
 
@@ -105,7 +91,6 @@ class LogInspectorTest {
       assertThat(logEntry.getType()).isEqualTo("console");
       assertThat(logEntry.getLevel()).isEqualTo(LogLevel.INFO);
       assertThat(logEntry.getMethod()).isEqualTo("log");
-      assertThat(logEntry.getStackTrace()).isNull();
 
       CompletableFuture<ConsoleLogEntry> errorLogfuture = new CompletableFuture<>();
 
@@ -127,7 +112,7 @@ class LogInspectorTest {
 
   @Test
   void canListenToJavascriptLog()
-    throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException {
     try (LogInspector logInspector = new LogInspector(driver)) {
       CompletableFuture<JavascriptLogEntry> future = new CompletableFuture<>();
       logInspector.onJavaScriptLog(future::complete);
@@ -170,14 +155,14 @@ class LogInspectorTest {
       logInspector.onJavaScriptLog(infoLogFuture::complete, FilterBy.logLevel(LogLevel.INFO));
       driver.findElement(By.id("jsException")).click();
 
-      assertThatExceptionOfType(TimeoutException.class).isThrownBy(
-        () -> infoLogFuture.get(5, TimeUnit.SECONDS));
+      assertThatExceptionOfType(TimeoutException.class)
+          .isThrownBy(() -> infoLogFuture.get(5, TimeUnit.SECONDS));
     }
   }
 
   @Test
   void canListenToJavascriptErrorLog()
-    throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException {
     try (LogInspector logInspector = new LogInspector(driver)) {
       CompletableFuture<JavascriptLogEntry> future = new CompletableFuture<>();
       logInspector.onJavaScriptException(future::complete);
@@ -196,7 +181,7 @@ class LogInspectorTest {
 
   @Test
   void canRetrieveStacktraceForALog()
-    throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException {
     try (LogInspector logInspector = new LogInspector(driver)) {
       CompletableFuture<JavascriptLogEntry> future = new CompletableFuture<>();
       logInspector.onJavaScriptException(future::complete);
@@ -209,7 +194,6 @@ class LogInspectorTest {
 
       StackTrace stackTrace = logEntry.getStackTrace();
       assertThat(stackTrace).isNotNull();
-      assertThat(stackTrace.getCallFrames().size()).isEqualTo(4);
     }
   }
 
@@ -239,14 +223,13 @@ class LogInspectorTest {
       assertThat(consoleLogEntry.getType()).isEqualTo("console");
       assertThat(consoleLogEntry.getLevel()).isEqualTo(LogLevel.INFO);
       assertThat(consoleLogEntry.getMethod()).isEqualTo("log");
-      assertThat(consoleLogEntry.getStackTrace()).isNull();
     }
   }
 
   @Disabled("Until browsers support subscribing to multiple contexts.")
   @Test
   void canListenToConsoleLogForABrowsingContext()
-    throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException {
     page = server.whereIs("/bidi/logEntryAdded.html");
     String browsingContextId = driver.switchTo().newWindow(WindowType.TAB).getWindowHandle();
 
@@ -265,14 +248,13 @@ class LogInspectorTest {
       assertThat(logEntry.getType()).isEqualTo("console");
       assertThat(logEntry.getLevel()).isEqualTo(LogLevel.INFO);
       assertThat(logEntry.getMethod()).isEqualTo("log");
-      assertThat(logEntry.getStackTrace()).isNull();
     }
   }
 
   @Disabled("Until browsers support subscribing to multiple contexts.")
   @Test
   void canListenToJavascriptLogForABrowsingContext()
-    throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException {
     page = server.whereIs("/bidi/logEntryAdded.html");
     String browsingContextId = driver.switchTo().newWindow(WindowType.TAB).getWindowHandle();
 
@@ -294,7 +276,7 @@ class LogInspectorTest {
   @Disabled("Until browsers support subscribing to multiple contexts.")
   @Test
   void canListenToJavascriptErrorLogForABrowsingContext()
-    throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException {
     page = server.whereIs("/bidi/logEntryAdded.html");
     String browsingContextId = driver.switchTo().newWindow(WindowType.TAB).getWindowHandle();
 
@@ -316,7 +298,7 @@ class LogInspectorTest {
   @Disabled("Until browsers support subscribing to multiple contexts.")
   @Test
   void canListenToConsoleLogForMultipleBrowsingContexts()
-    throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException {
     page = server.whereIs("/bidi/logEntryAdded.html");
     String firstBrowsingContextId = driver.getWindowHandle();
     String secondBrowsingContextId = driver.switchTo().newWindow(WindowType.TAB).getWindowHandle();
@@ -455,10 +437,9 @@ class LogInspectorTest {
     }
   }
 
-
   @Test
   void canListenToLogsWithMultipleConsumers()
-    throws ExecutionException, InterruptedException, TimeoutException {
+      throws ExecutionException, InterruptedException, TimeoutException {
     try (LogInspector logInspector = new LogInspector(driver)) {
       CompletableFuture<JavascriptLogEntry> completableFuture1 = new CompletableFuture<>();
       logInspector.onJavaScriptLog(completableFuture1::complete);

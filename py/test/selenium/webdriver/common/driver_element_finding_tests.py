@@ -93,6 +93,13 @@ def test_finding_multiple_elements_by_id_with_space_should_return_empty_list(dri
     assert len(elements) == 0
 
 
+def test_no_such_element_error(driver, pages):
+    pages.load("formPage.html")
+    msg = r"\/errors#no-such-element-exception"
+    with pytest.raises(NoSuchElementException, match=msg):
+        driver.find_element(By.ID, "non_Existent_Button")
+
+
 # By.name positive
 
 
@@ -185,6 +192,9 @@ def test_should_not_be_able_to_locate_by_tag_name_multiple_elements_that_do_not_
 
 @pytest.mark.xfail_firefox(reason="https://github.com/mozilla/geckodriver/issues/2007")
 @pytest.mark.xfail_remote(reason="https://github.com/mozilla/geckodriver/issues/2007")
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises NoSuchElementException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_asingle_element_by_empty_tag_name_should_throw(driver, pages):
     pages.load("formPage.html")
     with pytest.raises(InvalidSelectorException):
@@ -193,6 +203,9 @@ def test_finding_asingle_element_by_empty_tag_name_should_throw(driver, pages):
 
 @pytest.mark.xfail_firefox(reason="https://github.com/mozilla/geckodriver/issues/2007")
 @pytest.mark.xfail_remote(reason="https://github.com/mozilla/geckodriver/issues/2007")
+@pytest.mark.xfail_safari(reason="unlike chrome, safari returns an empty list")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_multiple_elements_by_empty_tag_name_should_throw(driver, pages):
     pages.load("formPage.html")
     with pytest.raises(InvalidSelectorException):
@@ -266,12 +279,19 @@ def test_should_not_find_element_by_class_when_the_name_queried_is_shorter_than_
         driver.find_element(By.CLASS_NAME, "name_B")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_asingle_element_by_empty_class_name_should_throw(driver, pages):
     pages.load("xhtmlTest.html")
-    with pytest.raises(InvalidSelectorException):
+    msg = r"\/errors#invalid-selector-exception"
+    with pytest.raises(InvalidSelectorException, match=msg):
         driver.find_element(By.CLASS_NAME, "")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_multiple_elements_by_empty_class_name_should_throw(driver, pages):
     pages.load("xhtmlTest.html")
     with pytest.raises(InvalidSelectorException):
@@ -284,12 +304,18 @@ def test_finding_asingle_element_by_compound_class_name_should_throw(driver, pag
         driver.find_element(By.CLASS_NAME, "a b")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_asingle_element_by_invalid_class_name_should_throw(driver, pages):
     pages.load("xhtmlTest.html")
     with pytest.raises(InvalidSelectorException):
         driver.find_element(By.CLASS_NAME, "!@#$%^&*")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_multiple_elements_by_invalid_class_name_should_throw(driver, pages):
     pages.load("xhtmlTest.html")
     with pytest.raises(InvalidSelectorException):
@@ -346,7 +372,7 @@ def test_finding_alink_by_xpath_using_contains_keyword_should_work(driver, pages
 
 
 # @pytest.mark.xfail_chrome(raises=InvalidSelectorException)
-# @pytest.mark.xfail_chromiumedge(raises=InvalidSelectorException)
+# @pytest.mark.xfail_edge(raises=InvalidSelectorException)
 # @pytest.mark.xfail_firefox(raises=InvalidSelectorException)
 # @pytest.mark.xfail_remote(raises=InvalidSelectorException)
 # @pytest.mark.xfail_safari(raises=NoSuchElementException)
@@ -372,6 +398,9 @@ def test_should_throw_an_exception_when_there_is_no_link_to_click(driver, pages)
         driver.find_element(By.XPATH, "//a[@id='Not here']")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_should_throw_invalid_selector_exception_when_xpath_is_syntactically_invalid_in_driver_find_element(
     driver, pages
 ):
@@ -380,6 +409,9 @@ def test_should_throw_invalid_selector_exception_when_xpath_is_syntactically_inv
         driver.find_element(By.XPATH, "this][isnot][valid")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_should_throw_invalid_selector_exception_when_xpath_is_syntactically_invalid_in_driver_find_elements(
     driver, pages
 ):
@@ -388,6 +420,9 @@ def test_should_throw_invalid_selector_exception_when_xpath_is_syntactically_inv
         driver.find_elements(By.XPATH, "this][isnot][valid")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_should_throw_invalid_selector_exception_when_xpath_is_syntactically_invalid_in_element_find_element(
     driver, pages
 ):
@@ -397,6 +432,9 @@ def test_should_throw_invalid_selector_exception_when_xpath_is_syntactically_inv
         body.find_element(By.XPATH, "this][isnot][valid")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_should_throw_invalid_selector_exception_when_xpath_is_syntactically_invalid_in_element_find_elements(
     driver, pages
 ):
@@ -406,18 +444,27 @@ def test_should_throw_invalid_selector_exception_when_xpath_is_syntactically_inv
         body.find_elements(By.XPATH, "this][isnot][valid")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_should_throw_invalid_selector_exception_when_xpath_returns_wrong_type_in_driver_find_element(driver, pages):
     pages.load("formPage.html")
     with pytest.raises(InvalidSelectorException):
         driver.find_element(By.XPATH, "count(//input)")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_should_throw_invalid_selector_exception_when_xpath_returns_wrong_type_in_driver_find_elements(driver, pages):
     pages.load("formPage.html")
     with pytest.raises(InvalidSelectorException):
         driver.find_elements(By.XPATH, "count(//input)")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_should_throw_invalid_selector_exception_when_xpath_returns_wrong_type_in_element_find_element(driver, pages):
     pages.load("formPage.html")
     body = driver.find_element(By.TAG_NAME, "body")
@@ -425,6 +472,9 @@ def test_should_throw_invalid_selector_exception_when_xpath_returns_wrong_type_i
         body.find_element(By.XPATH, "count(//input)")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_should_throw_invalid_selector_exception_when_xpath_returns_wrong_type_in_element_find_elements(driver, pages):
     pages.load("formPage.html")
     body = driver.find_element(By.TAG_NAME, "body")
@@ -496,24 +546,36 @@ def test_should_not_find_elements_by_css_selector_when_there_is_no_such_element(
     assert len(elements) == 0
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_asingle_element_by_empty_css_selector_should_throw(driver, pages):
     pages.load("xhtmlTest.html")
     with pytest.raises(InvalidSelectorException):
         driver.find_element(By.CSS_SELECTOR, "")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_multiple_elements_by_empty_css_selector_should_throw(driver, pages):
     pages.load("xhtmlTest.html")
     with pytest.raises(InvalidSelectorException):
         driver.find_elements(By.CSS_SELECTOR, "")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_asingle_element_by_invalid_css_selector_should_throw(driver, pages):
     pages.load("xhtmlTest.html")
     with pytest.raises(InvalidSelectorException):
         driver.find_element(By.CSS_SELECTOR, "//a/b/c[@id='1']")
 
 
+@pytest.mark.xfail_safari(reason="unlike chrome, safari raises TimeoutException")
+@pytest.mark.xfail_chrome(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+@pytest.mark.xfail_edge(reason="https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
 def test_finding_multiple_elements_by_invalid_css_selector_should_throw(driver, pages):
     pages.load("xhtmlTest.html")
     with pytest.raises(InvalidSelectorException):

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 
 namespace OpenQA.Selenium.Environment
 {
@@ -32,40 +33,29 @@ namespace OpenQA.Selenium.Environment
                             "go //java/src/org/openqa/grid/selenium:selenium"));
                 }
 
-                string serviceDirectory = EnvironmentManager.Instance.DriverServiceDirectory;
-                if (string.IsNullOrEmpty(serviceDirectory))
-                {
-                    serviceDirectory = EnvironmentManager.Instance.CurrentDirectory;
-                }
-
-                string ieDriverExe = System.IO.Path.Combine(serviceDirectory, "IEDriverServer.exe");
-                string chromeDriverExe = System.IO.Path.Combine(serviceDirectory, "chromedriver.exe");
-                string geckoDriverExe = System.IO.Path.Combine(serviceDirectory, "geckodriver.exe");
-                string edgeDriverExe = System.IO.Path.Combine(serviceDirectory, "msedgedriver.exe");
                 webserverProcess = new Process();
                 webserverProcess.StartInfo.FileName = "java.exe";
-                webserverProcess.StartInfo.Arguments = "-Dwebdriver.ie.driver=" + ieDriverExe
-                                                     + " -Dwebdriver.gecko.driver=" + geckoDriverExe
-                                                     + " -Dwebdriver.chrome.driver=" + chromeDriverExe
-                                                     + " -Dwebdriver.edge.driver=" + edgeDriverExe
-                                                     + " -jar " + serverJarName + " standalone --port 6000";
+                webserverProcess.StartInfo.Arguments = " -jar " + serverJarName + " standalone --port 6000 --selenium-manager true --enable-managed-downloads true";
                 webserverProcess.StartInfo.WorkingDirectory = projectRootPath;
                 webserverProcess.Start();
                 DateTime timeout = DateTime.Now.Add(TimeSpan.FromSeconds(30));
                 bool isRunning = false;
+
+                // Poll until the webserver is correctly serving pages.
+                using var httpClient = new HttpClient();
+
                 while (!isRunning && DateTime.Now < timeout)
                 {
-                    // Poll until the webserver is correctly serving pages.
-                    HttpWebRequest request = WebRequest.Create("http://localhost:6000/wd/hub/status") as HttpWebRequest;
                     try
                     {
-                        HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                        using var response = httpClient.GetAsync("http://localhost:6000/wd/hub/status").GetAwaiter().GetResult();
+
                         if (response.StatusCode == HttpStatusCode.OK)
                         {
                             isRunning = true;
                         }
                     }
-                    catch (WebException)
+                    catch (Exception ex) when (ex is HttpRequestException || ex is TimeoutException)
                     {
                     }
                 }
@@ -79,14 +69,15 @@ namespace OpenQA.Selenium.Environment
 
         public void Stop()
         {
-            if (autoStart && (webserverProcess != null && !webserverProcess.HasExited))
+            if (autoStart && webserverProcess != null && !webserverProcess.HasExited)
             {
-                HttpWebRequest request = WebRequest.Create("http://localhost:6000/selenium-server/driver?cmd=shutDownSeleniumServer") as HttpWebRequest;
+                using var httpClient = new HttpClient();
+
                 try
                 {
-                    request.GetResponse();
+                    using var response = httpClient.GetAsync("http://localhost:6000/selenium-server/driver?cmd=shutDownSeleniumServer").GetAwaiter().GetResult();
                 }
-                catch (WebException)
+                catch (Exception ex) when (ex is HttpRequestException || ex is TimeoutException)
                 {
                 }
 

@@ -16,10 +16,10 @@
 // limitations under the License.
 // </copyright>
 
-using System;
-using System.Globalization;
-using System.Text;
 using OpenQA.Selenium.Internal;
+using System.Globalization;
+using System.IO;
+using System.Text;
 
 namespace OpenQA.Selenium.IE
 {
@@ -29,7 +29,6 @@ namespace OpenQA.Selenium.IE
     public sealed class InternetExplorerDriverService : DriverService
     {
         private const string InternetExplorerDriverServiceFileName = "IEDriverServer.exe";
-        private static readonly Uri InternetExplorerDriverDownloadUrl = new Uri("https://www.selenium.dev/downloads/");
 
         private InternetExplorerDriverLogLevel loggingLevel = InternetExplorerDriverLogLevel.Fatal;
         private string host = string.Empty;
@@ -44,8 +43,14 @@ namespace OpenQA.Selenium.IE
         /// <param name="executableFileName">The file name of the IEDriverServer executable.</param>
         /// <param name="port">The port on which the IEDriverServer executable should listen.</param>
         private InternetExplorerDriverService(string executablePath, string executableFileName, int port)
-            : base(executablePath, port, executableFileName, InternetExplorerDriverDownloadUrl)
+            : base(executablePath, port, executableFileName)
         {
+        }
+
+        /// <inheritdoc />
+        protected override DriverOptions GetDefaultDriverOptions()
+        {
+            return new InternetExplorerOptions();
         }
 
         /// <summary>
@@ -149,29 +154,28 @@ namespace OpenQA.Selenium.IE
         /// <returns>A InternetExplorerDriverService that implements default settings.</returns>
         public static InternetExplorerDriverService CreateDefaultService()
         {
-            return CreateDefaultService(new InternetExplorerOptions());
-        }
-
-        /// <summary>
-        /// Creates a default instance of the InternetExplorerDriverService.
-        /// </summary>
-        /// <param name="options">Browser options used to find the correct IEDriver binary.</param>
-        /// <returns>A InternetExplorerDriverService that implements default settings.</returns>
-        public static InternetExplorerDriverService CreateDefaultService(InternetExplorerOptions options)
-        {
-            string serviceDirectory = DriverService.FindDriverServiceExecutable(InternetExplorerDriverServiceFileName, InternetExplorerDriverDownloadUrl);
-            InternetExplorerDriverService service = CreateDefaultService(serviceDirectory);
-            return DriverFinder.VerifyDriverServicePath(service, options) as InternetExplorerDriverService;
+            return new InternetExplorerDriverService(null, null, PortUtilities.FindFreePort());
         }
 
         /// <summary>
         /// Creates a default instance of the InternetExplorerDriverService using a specified path to the IEDriverServer executable.
         /// </summary>
-        /// <param name="driverPath">The directory containing the IEDriverServer executable.</param>
+        /// <param name="driverPath">The path to the executable or the directory containing the IEDriverServer executable.</param>
         /// <returns>A InternetExplorerDriverService using a random port.</returns>
         public static InternetExplorerDriverService CreateDefaultService(string driverPath)
         {
-            return CreateDefaultService(driverPath, InternetExplorerDriverServiceFileName);
+            string fileName;
+            if (File.Exists(driverPath))
+            {
+                fileName = Path.GetFileName(driverPath);
+                driverPath = Path.GetDirectoryName(driverPath);
+            }
+            else
+            {
+                fileName = InternetExplorerDriverServiceFileName;
+            }
+
+            return CreateDefaultService(driverPath, fileName);
         }
 
         /// <summary>

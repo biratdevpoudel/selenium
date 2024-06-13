@@ -16,10 +16,9 @@
 // limitations under the License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
 using OpenQA.Selenium.Interactions.Internal;
 using OpenQA.Selenium.Internal;
+using System;
 
 namespace OpenQA.Selenium
 {
@@ -31,7 +30,7 @@ namespace OpenQA.Selenium
         private WebElement element;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteCoordinates"/> class.
+        /// Initializes a new instance of the <see cref="ElementCoordinates"/> class.
         /// </summary>
         /// <param name="element">The <see cref="WebElement"/> to be located.</param>
         public ElementCoordinates(WebElement element)

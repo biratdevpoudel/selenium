@@ -16,6 +16,8 @@
 // limitations under the License.
 // </copyright>
 
+using OpenQA.Selenium.Internal;
+using OpenQA.Selenium.Internal.Logging;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -24,9 +26,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using OpenQA.Selenium.Internal;
 
 namespace OpenQA.Selenium.Remote
 {
@@ -49,6 +49,8 @@ namespace OpenQA.Selenium.Remote
         private IWebProxy proxy;
         private CommandInfoRepository commandInfoRepository = new W3CWireProtocolCommandInfoRepository();
         private HttpClient client;
+
+        private static readonly ILogger _logger = Log.GetLogger<HttpCommandExecutor>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HttpCommandExecutor"/> class
@@ -79,7 +81,7 @@ namespace OpenQA.Selenium.Remote
                 addressOfRemoteServer = new Uri(addressOfRemoteServer.ToString() + "/");
             }
 
-            this.userAgent = string.Format(CultureInfo.InvariantCulture, UserAgentHeaderTemplate, ResourceUtilities.AssemblyVersion, ResourceUtilities.PlatformFamily);
+            this.userAgent = string.Format(CultureInfo.InvariantCulture, UserAgentHeaderTemplate, ResourceUtilities.ProductVersion, ResourceUtilities.PlatformFamily);
             this.remoteServerUri = addressOfRemoteServer;
             this.serverResponseTimeout = timeout;
             this.enableKeepAlive = enableKeepAlive;
@@ -157,9 +159,24 @@ namespace OpenQA.Selenium.Remote
         /// <returns>A response from the browser</returns>
         public virtual Response Execute(Command commandToExecute)
         {
+            return Task.Run(() => this.ExecuteAsync(commandToExecute)).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Executes a command as an asynchronous task.
+        /// </summary>
+        /// <param name="commandToExecute">The command you wish to execute</param>
+        /// <returns>A task object representing the asynchronous operation</returns>
+        public virtual async Task<Response> ExecuteAsync(Command commandToExecute)
+        {
             if (commandToExecute == null)
             {
                 throw new ArgumentNullException(nameof(commandToExecute), "commandToExecute cannot be null");
+            }
+
+            if (_logger.IsEnabled(LogEventLevel.Debug))
+            {
+                _logger.Debug($"Executing command: {commandToExecute}");
             }
 
             HttpCommandInfo info = this.commandInfoRepository.GetCommandInfo<HttpCommandInfo>(commandToExecute.Name);
@@ -177,15 +194,7 @@ namespace OpenQA.Selenium.Remote
             HttpResponseInfo responseInfo = null;
             try
             {
-                // Use TaskFactory to avoid deadlock in multithreaded implementations.
-                responseInfo = new TaskFactory(CancellationToken.None,
-                        TaskCreationOptions.None,
-                        TaskContinuationOptions.None,
-                        TaskScheduler.Default)
-                    .StartNew(() => this.MakeHttpRequest(requestInfo))
-                    .Unwrap()
-                    .GetAwaiter()
-                    .GetResult();
+                responseInfo = await this.MakeHttpRequest(requestInfo).ConfigureAwait(false);
             }
             catch (HttpRequestException ex)
             {
@@ -199,6 +208,12 @@ namespace OpenQA.Selenium.Remote
             }
 
             Response toReturn = this.CreateResponse(responseInfo);
+
+            if (_logger.IsEnabled(LogEventLevel.Debug))
+            {
+                _logger.Debug($"Response: {toReturn}");
+            }
+
             return toReturn;
         }
 
@@ -278,10 +293,20 @@ namespace OpenQA.Selenium.Remote
                     requestMessage.Content.Headers.ContentType = contentTypeHeader;
                 }
 
-                using (HttpResponseMessage responseMessage = await this.client.SendAsync(requestMessage))
+                if (_logger.IsEnabled(LogEventLevel.Trace))
                 {
+                    _logger.Trace($">> {requestMessage}");
+                }
+
+                using (HttpResponseMessage responseMessage = await this.client.SendAsync(requestMessage).ConfigureAwait(false))
+                {
+                    if (_logger.IsEnabled(LogEventLevel.Trace))
+                    {
+                        _logger.Trace($"<< {responseMessage}");
+                    }
+
                     HttpResponseInfo httpResponseInfo = new HttpResponseInfo();
-                    httpResponseInfo.Body = await responseMessage.Content.ReadAsStringAsync();
+                    httpResponseInfo.Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
                     httpResponseInfo.ContentType = responseMessage.Content.Headers.ContentType?.ToString();
                     httpResponseInfo.StatusCode = responseMessage.StatusCode;
 
@@ -294,14 +319,21 @@ namespace OpenQA.Selenium.Remote
         {
             Response response = new Response();
             string body = responseInfo.Body;
-            if (responseInfo.ContentType != null && responseInfo.ContentType.StartsWith(JsonMimeType, StringComparison.OrdinalIgnoreCase))
+            if ((int)responseInfo.StatusCode < 200 || (int)responseInfo.StatusCode > 299)
+            {
+                if (responseInfo.ContentType != null && responseInfo.ContentType.StartsWith(JsonMimeType, StringComparison.OrdinalIgnoreCase))
+                {
+                    response = Response.FromErrorJson(body);
+                }
+                else
+                {
+                    response.Status = WebDriverResult.UnhandledError;
+                    response.Value = body;
+                }
+            }
+            else if (responseInfo.ContentType != null && responseInfo.ContentType.StartsWith(JsonMimeType, StringComparison.OrdinalIgnoreCase))
             {
                 response = Response.FromJson(body);
-            }
-            else if (responseInfo.StatusCode.ToString().First() != '2')
-            {
-                response.Status = WebDriverResult.UnhandledError;
-                response.Value = body;
             }
             else
             {

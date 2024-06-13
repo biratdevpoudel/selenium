@@ -18,8 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace OpenQA.Selenium.DevTools
 {
@@ -37,9 +35,9 @@ namespace OpenQA.Selenium.DevTools
         // added to this dictionary.
         private static readonly Dictionary<int, Type> SupportedDevToolsVersions = new Dictionary<int, Type>()
         {
-            { 113, typeof(V113.V113Domains) },
-            { 112, typeof(V112.V112Domains) },
-            { 111, typeof(V111.V111Domains) },
+            { 124, typeof(V124.V124Domains) },
+            { 123, typeof(V123.V123Domains) },
+            { 125, typeof(V125.V125Domains) },
             { 85, typeof(V85.V85Domains) }
         };
 

@@ -22,9 +22,9 @@ require_relative '../spec_helper'
 module Selenium
   module WebDriver
     class BiDi
-      describe BrowsingContext, only: {browser: %i[chrome edge firefox]} do
-        before { reset_driver!(web_socket_url: true) }
-        after { quit_driver }
+      describe BrowsingContext, exclusive: {bidi: true, reason: 'only executed when bidi is enabled'},
+                                only: {browser: %i[chrome edge firefox]} do
+        after { |example| reset_driver!(example: example) }
 
         it 'can create a browsing context for given id' do
           id = driver.window_handle
@@ -37,9 +37,7 @@ module Selenium
           expect(browsing_context.id).not_to be_nil
         end
 
-        it 'can create a window with a reference context', except: [{browser: :chrome,
-                                                                     platform: %i[linux macosx]},
-                                                                    {browser: :edge}] do
+        it 'can create a window with a reference context' do
           browsing_context = described_class.new(driver: driver, type: :window,
                                                  reference_context: driver.window_handle)
           expect(browsing_context.id).not_to be_nil
@@ -50,9 +48,7 @@ module Selenium
           expect(browsing_context.id).not_to be_nil
         end
 
-        it 'can create a tab with a reference context', except: [{browser: :chrome,
-                                                                  platform: %i[linux macosx]},
-                                                                 {browser: :edge}] do
+        it 'can create a tab with a reference context' do
           browsing_context = described_class.new(driver: driver, type: :tab, reference_context: driver.window_handle)
           expect(browsing_context.id).not_to be_nil
         end

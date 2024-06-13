@@ -1,9 +1,5 @@
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OpenQA.Selenium.Environment
 {
@@ -14,10 +10,10 @@ namespace OpenQA.Selenium.Environment
         public bool CaptureWebServerOutput { get; set; }
 
         [JsonProperty]
-        public bool HideWebServerCommandPrompt { get; set; }
+        public string DriverServiceLocation { get; set; }
 
         [JsonProperty]
-        public string DriverServiceLocation { get; set; }
+        public bool HideWebServerCommandPrompt { get; set; }
 
         [JsonProperty]
         public string ActiveDriverConfig { get; set; }
@@ -32,6 +28,6 @@ namespace OpenQA.Selenium.Environment
         public Dictionary<string, DriverConfig> DriverConfigs { get; set; }
 
         [JsonProperty]
-        public TestWebServerConfig TestWebServerConfig {get; set;}
+        public TestWebServerConfig TestWebServerConfig { get; set; }
     }
 }

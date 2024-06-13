@@ -17,37 +17,15 @@
 
 package org.openqa.selenium.remote;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.openqa.selenium.OutputType.BASE64;
+
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.testing.Ignore;
 import org.openqa.selenium.testing.JupiterTestBase;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.openqa.selenium.OutputType.BASE64;
-import static org.openqa.selenium.testing.drivers.Browser.HTMLUNIT;
-
-@Ignore(HTMLUNIT)
 class RemoteWebDriverScreenshotTest extends JupiterTestBase {
-
-  @Test
-  @Ignore
-  public void testShouldBeAbleToGrabASnapshotOnException() {
-    if (!(driver instanceof RemoteWebDriver)) {
-      System.out.println("Skipping test: driver is not a remote webdriver");
-      return;
-    }
-
-    driver.get(pages.simpleTestPage);
-
-    assertThatExceptionOfType(NoSuchElementException.class)
-        .isThrownBy(() -> driver.findElement(By.id("doesnayexist")))
-        .satisfies(e -> assertThat(
-            ((ScreenshotException) e.getCause()).getBase64EncodedScreenshot().length()).isPositive());
-  }
 
   @Test
   void testCanAugmentWebDriverInstanceIfNecessary() {
@@ -62,5 +40,4 @@ class RemoteWebDriverScreenshotTest extends JupiterTestBase {
 
     assertThat(screenshot.length()).isPositive();
   }
-
 }

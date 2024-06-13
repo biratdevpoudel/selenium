@@ -21,16 +21,14 @@
  *  Wrapper for getting information from the Selenium Manager binaries
  */
 
-const { platform } = require('process')
-const path = require('path')
-const fs = require('fs')
-const spawnSync = require('child_process').spawnSync
+const { platform } = require('node:process')
+const path = require('node:path')
+const fs = require('node:fs')
+const spawnSync = require('node:child_process').spawnSync
+const logging = require('../lib/logging')
 
-/**
- * currently supported browsers for selenium-manager
- * @type {string[]}
- */
-const Browser = ['chrome', 'firefox', 'edge', 'MicrosoftEdge', 'iexplorer']
+const log_ = logging.getLogger(logging.Type.DRIVER)
+let debugMessagePrinted = false
 
 /**
  * Determines the path of the correct Selenium Manager binary
@@ -44,20 +42,19 @@ function getBinary() {
     linux: 'linux',
   }[platform]
 
-  const file =
-    directory === 'windows' ? 'selenium-manager.exe' : 'selenium-manager'
+  const file = directory === 'windows' ? 'selenium-manager.exe' : 'selenium-manager'
 
-  let seleniumManagerBasePath
-  if (process.env.SELENIUM_MANAGER_BASE_PATH) {
-    seleniumManagerBasePath = process.env.SELENIUM_MANAGER_BASE_PATH
-  } else {
-    seleniumManagerBasePath = path.join(__dirname, '..', '/bin')
-  }
+  let seleniumManagerBasePath = path.join(__dirname, '..', '/bin')
 
-  const filePath = path.join(seleniumManagerBasePath, directory, file)
+  const filePath = process.env.SE_MANAGER_PATH || path.join(seleniumManagerBasePath, directory, file)
 
   if (!fs.existsSync(filePath)) {
-    throw new Error(`Unable to obtain Selenium Manager`)
+    throw new Error(`Unable to obtain Selenium Manager at ${filePath}`)
+  }
+
+  if (!debugMessagePrinted) {
+    log_.debug(`Selenium Manager binary found at ${filePath}`)
+    debugMessagePrinted = true // Set the flag to true after printing the debug message
   }
 
   return filePath
@@ -65,29 +62,12 @@ function getBinary() {
 
 /**
  * Determines the path of the correct driver
- * @param {Capabilities} options browser options to fetch the driver
- * @returns {string} path of the driver location
+ * @param {string[]} args arguments to invoke Selenium Manager
+ * @returns {{browserPath: string, driverPath: string}} path of the driver and
+ * browser location
  */
 
-function driverLocation(options) {
-  if (!Browser.includes(options.getBrowserName().toLocaleString())) {
-    throw new Error(
-      `Unable to locate driver associated with browser name: ${options.getBrowserName()}`
-    )
-  }
-
-  let args = ['--browser', options.getBrowserName(), '--output', 'json']
-
-  if (options.getBrowserVersion() && options.getBrowserVersion() !== "") {
-    args.push("--browser-version", options.getBrowserVersion())
-  }
-
-  const vendorOptions = options.get('goog:chromeOptions') || options.get('ms:edgeOptions')
-                        || options.get('moz:firefoxOptions')
-  if (vendorOptions && vendorOptions.binary && vendorOptions.binary !== "") {
-    args.push("--browser-path", '"' + vendorOptions.binary + '"')
-  }
-
+function binaryPaths(args) {
   const smBinary = getBinary()
   const spawnResult = spawnSync(smBinary, args)
   let output
@@ -99,6 +79,7 @@ function driverLocation(options) {
     if (spawnResult.stdout.toString()) {
       try {
         output = JSON.parse(spawnResult.stdout.toString())
+        logOutput(output)
         errorMessage = output.result.message
       } catch (e) {
         errorMessage = e.toString()
@@ -112,15 +93,23 @@ function driverLocation(options) {
     throw new Error(`Error executing command for ${smBinary} with ${args}: ${e.toString()}`)
   }
 
+  logOutput(output)
+  return {
+    driverPath: output.result.driver_path,
+    browserPath: output.result.browser_path,
+  }
+}
 
+function logOutput(output) {
   for (const key in output.logs) {
     if (output.logs[key].level === 'WARN') {
-      console.warn(`${output.logs[key].message}`)
+      log_.warning(`${output.logs[key].message}`)
+    }
+    if (['DEBUG', 'INFO'].includes(output.logs[key].level)) {
+      log_.debug(`${output.logs[key].message}`)
     }
   }
-
-  return output.result.message
 }
 
 // PUBLIC API
-module.exports = { driverLocation }
+module.exports = { binaryPaths }

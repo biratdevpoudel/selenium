@@ -25,8 +25,9 @@ import java.util.Objects;
 
 /**
  * A utility class to check arguments (preconditions) and state.
- * <p>
- * Examples of use:
+ *
+ * <p>Examples of use:
+ *
  * <pre>
  *   public void setActionWithTimeout(Action action delegate, int timeout) {
  *     this.action = Require.nonNull("Action", action);
@@ -41,6 +42,7 @@ public final class Require {
   private static final String MUST_BE_DIR = "%s must be a directory: %s";
   private static final String MUST_BE_FILE = "%s must be a regular file: %s";
   private static final String MUST_BE_EQUAL = "%s must be equal to `%s`";
+  private static final String MUST_BE_EXECUTABLE = "%s must be executable: %s";
   private static final String MUST_BE_NON_NEGATIVE = "%s must be 0 or greater";
   private static final String MUST_BE_POSITIVE = "%s must be greater than 0";
 
@@ -63,8 +65,7 @@ public final class Require {
 
   public static <T> T nonNull(String argName, T arg, String message, Object... args) {
     if (arg == null) {
-      throw new IllegalArgumentException(
-        String.join(" ", argName, String.format(message, args)));
+      throw new IllegalArgumentException(String.join(" ", argName, String.format(message, args)));
     }
     return arg;
   }
@@ -139,7 +140,7 @@ public final class Require {
 
   public static double positive(String argName, Double number, String message) {
     if (number == null) {
-        throw new IllegalArgumentException(String.format(MUST_BE_SET, argName));
+      throw new IllegalArgumentException(String.format(MUST_BE_SET, argName));
     }
     if (number <= 0) {
       if (message == null) {
@@ -267,11 +268,11 @@ public final class Require {
       }
       if (!file.exists()) {
         throw new IllegalArgumentException(
-          String.format(MUST_EXIST, argName, file.getAbsolutePath()));
+            String.format(MUST_EXIST, argName, file.getAbsolutePath()));
       }
       if (!file.isFile()) {
         throw new IllegalArgumentException(
-          String.format(MUST_BE_FILE, argName, file.getAbsolutePath()));
+            String.format(MUST_BE_FILE, argName, file.getAbsolutePath()));
       }
       return file;
     }
@@ -282,11 +283,11 @@ public final class Require {
       }
       if (!file.exists()) {
         throw new IllegalArgumentException(
-          String.format(MUST_EXIST, argName, file.getAbsolutePath()));
+            String.format(MUST_EXIST, argName, file.getAbsolutePath()));
       }
       if (!file.isDirectory()) {
         throw new IllegalArgumentException(
-          String.format(MUST_BE_DIR, argName, file.getAbsolutePath()));
+            String.format(MUST_BE_DIR, argName, file.getAbsolutePath()));
       }
       return file;
     }
@@ -359,6 +360,15 @@ public final class Require {
       }
       if (!file.isDirectory()) {
         throw new IllegalStateException(String.format(MUST_BE_DIR, name, file.getAbsolutePath()));
+      }
+      return file;
+    }
+
+    public File isExecutable() {
+      isFile();
+      if (!file.canExecute()) {
+        throw new IllegalStateException(
+            String.format(MUST_BE_EXECUTABLE, name, file.getAbsolutePath()));
       }
       return file;
     }

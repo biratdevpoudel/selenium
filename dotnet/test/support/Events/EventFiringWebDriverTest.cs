@@ -1,10 +1,9 @@
+using Moq;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using NUnit.Framework;
 using System.Collections.ObjectModel;
-using OpenQA.Selenium.Internal;
-using Moq;
+using System.Text;
 
 namespace OpenQA.Selenium.Support.Events
 {
@@ -13,6 +12,7 @@ namespace OpenQA.Selenium.Support.Events
     {
         private Mock<IWebDriver> mockDriver;
         private Mock<IWebElement> mockElement;
+        private Mock<ISearchContext> mockShadowRoot;
         private Mock<INavigation> mockNavigation;
         private IWebDriver stubDriver;
         private StringBuilder log;
@@ -22,6 +22,7 @@ namespace OpenQA.Selenium.Support.Events
         {
             mockDriver = new Mock<IWebDriver>();
             mockElement = new Mock<IWebElement>();
+            mockShadowRoot = new Mock<ISearchContext>();
             mockNavigation = new Mock<INavigation>();
             log = new StringBuilder();
         }
@@ -57,12 +58,15 @@ Navigated back
 Navigating forward
 Navigated forward
 ";
+            string normalizedExpectedLog = expectedLog.Replace("\r\n", "\n").Replace("\r", "\n");
             mockDriver.VerifySet(x => x.Url = "http://www.get.com", Times.Once);
             mockDriver.Verify(x => x.Navigate(), Times.Exactly(3));
-            mockNavigation.Verify(x => x.GoToUrl("http://www.navigate-to.com"), Times.Once);
-            mockNavigation.Verify(x => x.Back(), Times.Once);
-            mockNavigation.Verify(x => x.Forward(), Times.Once);
-            Assert.AreEqual(expectedLog, log.ToString());
+            mockNavigation.Verify(x => x.GoToUrlAsync("http://www.navigate-to.com"), Times.Once);
+            mockNavigation.Verify(x => x.BackAsync(), Times.Once);
+            mockNavigation.Verify(x => x.ForwardAsync(), Times.Once);
+
+            string normalizedActualLog =  log.ToString().Replace("\r\n", "\n").Replace("\r", "\n");
+            Assert.AreEqual(normalizedExpectedLog, normalizedActualLog);
         }
 
         [Test]
@@ -188,10 +192,10 @@ FindElementCompleted from IWebDriver By.XPath: //link[@type = 'text/css']
             {
                 testedDriver.ExecuteScript("foo", element);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // This is the error we're trying to fix
-                throw e;
+                throw;
             }
         }
 
@@ -212,6 +216,59 @@ FindElementCompleted from IWebDriver By.XPath: //link[@type = 'text/css']
             testDriver.Navigating += new EventHandler<WebDriverNavigationEventArgs>(testDriver_Navigating);
 
             testDriver.Url = "http://example.org";
+        }
+
+        [Test]
+        public void ShouldFireGetShadowRootEvents()
+        {
+            mockDriver.Setup(d => d.FindElement(It.IsAny<By>())).Returns(mockElement.Object);
+            EventFiringWebDriver testDriver = new EventFiringWebDriver(mockDriver.Object);
+
+            GetShadowRootEventArgs gettingShadowRootArgs = null;
+            GetShadowRootEventArgs getShadowRootCompletedArgs = null;
+            testDriver.GettingShadowRoot += (d, e) => gettingShadowRootArgs = e;
+            testDriver.GetShadowRootCompleted += (d, e) => getShadowRootCompletedArgs = e;
+
+            var abcElement = testDriver.FindElement(By.CssSelector(".abc"));
+
+            // act
+            abcElement.GetShadowRoot();
+
+            Assert.IsNotNull(gettingShadowRootArgs);
+            Assert.AreEqual(mockDriver.Object, gettingShadowRootArgs.Driver);
+            Assert.AreEqual(mockElement.Object, gettingShadowRootArgs.SearchContext);
+
+            Assert.IsNotNull(getShadowRootCompletedArgs);
+            Assert.AreEqual(mockDriver.Object, getShadowRootCompletedArgs.Driver);
+            Assert.AreEqual(mockElement.Object, getShadowRootCompletedArgs.SearchContext);
+        }
+
+        [Test]
+        public void ShouldFireFindEventsInShadowRoot()
+        {
+            mockElement.Setup(e => e.GetShadowRoot()).Returns(mockShadowRoot.Object);
+            mockElement.Setup(e => e.FindElement(It.IsAny<By>())).Returns(mockElement.Object);
+            mockDriver.Setup(d => d.FindElement(It.IsAny<By>())).Returns(mockElement.Object);
+            EventFiringWebDriver testDriver = new EventFiringWebDriver(mockDriver.Object);
+
+            FindElementEventArgs findingElementArgs = null;
+            FindElementEventArgs findElementCompletedArgs = null;
+            testDriver.FindingElement += (d, e) => findingElementArgs = e;
+            testDriver.FindElementCompleted += (d, e) => findElementCompletedArgs = e;
+
+            var abcElement = testDriver.FindElement(By.CssSelector(".abc"));
+            var shadowRoot = abcElement.GetShadowRoot();
+
+            // act
+            var element = shadowRoot.FindElement(By.CssSelector(".abc"));
+
+            Assert.IsNotNull(findingElementArgs);
+            Assert.AreEqual(mockDriver.Object, findingElementArgs.Driver);
+            Assert.AreEqual(null, findingElementArgs.Element);
+
+            Assert.IsNotNull(findElementCompletedArgs);
+            Assert.AreEqual(mockDriver.Object, findElementCompletedArgs.Driver);
+            Assert.AreEqual(null, findElementCompletedArgs.Element);
         }
 
         void testDriver_Navigating(object sender, WebDriverNavigationEventArgs e)

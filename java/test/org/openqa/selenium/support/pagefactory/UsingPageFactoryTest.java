@@ -21,19 +21,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebElement;
-import org.openqa.selenium.remote.internal.WebElementToJsonConverter;
+import org.openqa.selenium.remote.WebElementToJsonConverter;
 import org.openqa.selenium.support.ByIdOrName;
 import org.openqa.selenium.support.CacheLookup;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.testing.JupiterTestBase;
-
-import java.util.List;
 
 class UsingPageFactoryTest extends JupiterTestBase {
 
@@ -44,8 +43,10 @@ class UsingPageFactoryTest extends JupiterTestBase {
     Page page = new Page();
     PageFactory.initElements(driver, page);
 
-    String tagName = (String) ((JavascriptExecutor) driver).executeScript(
-        "return arguments[0].tagName", page.formElement);
+    String tagName =
+        (String)
+            ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].tagName", page.formElement);
 
     assertThat(tagName).isEqualToIgnoringCase("form");
   }
@@ -79,7 +80,6 @@ class UsingPageFactoryTest extends JupiterTestBase {
 
     assertThat(seen).isEqualTo(expected);
   }
-
 
   class PublicPage {
     public WebElement element;

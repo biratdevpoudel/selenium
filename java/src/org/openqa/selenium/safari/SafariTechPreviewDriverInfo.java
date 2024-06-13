@@ -17,24 +17,24 @@
 
 package org.openqa.selenium.safari;
 
-import com.google.auto.service.AutoService;
-
-import org.openqa.selenium.Capabilities;
-import org.openqa.selenium.ImmutableCapabilities;
-import org.openqa.selenium.SessionNotCreatedException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebDriverException;
-import org.openqa.selenium.WebDriverInfo;
-import org.openqa.selenium.remote.service.DriverFinder;
-
-import java.util.Optional;
-
 import static org.openqa.selenium.remote.Browser.SAFARI_TECH_PREVIEW;
 import static org.openqa.selenium.remote.CapabilityType.BROWSER_NAME;
+
+import com.google.auto.service.AutoService;
+import java.util.Optional;
+import java.util.logging.Logger;
+import org.openqa.selenium.Capabilities;
+import org.openqa.selenium.ImmutableCapabilities;
+import org.openqa.selenium.Platform;
+import org.openqa.selenium.SessionNotCreatedException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverInfo;
+import org.openqa.selenium.remote.service.DriverFinder;
 
 @SuppressWarnings("unused")
 @AutoService(WebDriverInfo.class)
 public class SafariTechPreviewDriverInfo implements WebDriverInfo {
+  private static final Logger LOG = Logger.getLogger(SafariTechPreviewDriverInfo.class.getName());
 
   @Override
   public String getDisplayName() {
@@ -52,10 +52,7 @@ public class SafariTechPreviewDriverInfo implements WebDriverInfo {
       return true;
     }
 
-    return capabilities.asMap().keySet().parallelStream()
-      .map(key -> key.startsWith("safari:"))
-      .reduce(Boolean::logicalOr)
-      .orElse(false);
+    return capabilities.asMap().keySet().stream().anyMatch(key -> key.startsWith("safari:"));
   }
 
   @Override
@@ -70,18 +67,18 @@ public class SafariTechPreviewDriverInfo implements WebDriverInfo {
 
   @Override
   public boolean isAvailable() {
-    try {
-      DriverFinder.getPath(SafariTechPreviewDriverService.createDefaultService(),
-                           getCanonicalCapabilities());
-      return true;
-    } catch (IllegalStateException | WebDriverException e) {
-      return false;
-    }
+    return Platform.getCurrent().is(Platform.MAC)
+        && new DriverFinder(
+                SafariTechPreviewDriverService.createDefaultService(), getCanonicalCapabilities())
+            .isAvailable();
   }
 
   @Override
   public boolean isPresent() {
-    return SafariTechPreviewDriverService.isPresent();
+    return Platform.getCurrent().is(Platform.MAC)
+        && new DriverFinder(
+                SafariTechPreviewDriverService.createDefaultService(), getCanonicalCapabilities())
+            .isPresent();
   }
 
   @Override
@@ -91,7 +88,7 @@ public class SafariTechPreviewDriverInfo implements WebDriverInfo {
 
   @Override
   public Optional<WebDriver> createDriver(Capabilities capabilities)
-    throws SessionNotCreatedException {
+      throws SessionNotCreatedException {
     if (!isAvailable()) {
       return Optional.empty();
     }

@@ -16,9 +16,9 @@
 // limitations under the License.
 // </copyright>
 
+using OpenQA.Selenium.Internal;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using OpenQA.Selenium.Internal;
 
 namespace OpenQA.Selenium.Firefox
 {
@@ -48,7 +48,7 @@ namespace OpenQA.Selenium.Firefox
         /// <summary>
         /// Argument to launch the intent with. The given intent arguments are appended to the "am start" command. 
         /// </summary>
-        /// <param name="arguments">The argument to add.</param>
+        /// <param name="argument">The argument to add.</param>
         public void AddIntentArgument(string argument)
         {
             this.AddIntentArguments(argument);

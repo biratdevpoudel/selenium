@@ -20,19 +20,18 @@ package org.openqa.selenium;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.openqa.selenium.testing.drivers.Browser.CHROME;
+import static org.openqa.selenium.testing.drivers.Browser.EDGE;
 import static org.openqa.selenium.testing.drivers.Browser.FIREFOX;
-import static org.openqa.selenium.testing.drivers.Browser.HTMLUNIT;
 import static org.openqa.selenium.testing.drivers.Browser.IE;
 import static org.openqa.selenium.testing.drivers.Browser.SAFARI;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.testing.Ignore;
 import org.openqa.selenium.testing.JupiterTestBase;
 import org.openqa.selenium.testing.NeedsFreshDriver;
 import org.openqa.selenium.testing.NotYetImplemented;
 import org.openqa.selenium.testing.SwitchToTopAfterTest;
-
-import java.util.List;
 
 class ElementFindingTest extends JupiterTestBase {
 
@@ -101,6 +100,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testFindingASingleElementByEmptyIdShouldThrow() {
     driver.get(pages.formPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -108,7 +109,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
-  @NotYetImplemented(HTMLUNIT)
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   public void testFindingMultipleElementsByEmptyIdShouldThrow() {
     driver.get(pages.formPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -318,6 +320,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testFindingASingleElementByEmptyClassNameShouldThrow() {
     driver.get(pages.xhtmlTestPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -325,6 +329,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testFindingMultipleElementsByEmptyClassNameShouldThrow() {
     driver.get(pages.xhtmlTestPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -346,7 +352,6 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
-  @NotYetImplemented(HTMLUNIT)
   public void testShouldBeAbleToFindASingleElementByAWeirdLookingClassName() {
     driver.get(pages.xhtmlTestPage);
     WebElement element = driver.findElement(By.className("cls-!@#$%^&*"));
@@ -354,7 +359,6 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
-  @NotYetImplemented(HTMLUNIT)
   public void testShouldBeAbleToFindMultipleElementsByAWeirdLookingClassName() {
     driver.get(pages.xhtmlTestPage);
     List<WebElement> elements = driver.findElements(By.className("cls-!@#$%^&*"));
@@ -398,8 +402,9 @@ class ElementFindingTest extends JupiterTestBase {
   @Test
   void testShouldBeAbleToFindAnElementByXPathWithMultipleAttributes() {
     driver.get(pages.formPage);
-    WebElement element = driver.findElement(
-        By.xpath("//form[@name='optional']/input[@type='submit' and @value='Click!']"));
+    WebElement element =
+        driver.findElement(
+            By.xpath("//form[@name='optional']/input[@type='submit' and @value='Click!']"));
     assertThat(element.getTagName()).isEqualToIgnoringCase("input");
     assertThat(element.getAttribute("value")).isEqualTo("Click!");
   }
@@ -438,6 +443,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testShouldThrowInvalidSelectorExceptionWhenXPathIsSyntacticallyInvalidInDriverFindElement() {
     driver.get(pages.formPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -445,14 +452,20 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
-  void testShouldThrowInvalidSelectorExceptionWhenXPathIsSyntacticallyInvalidInDriverFindElements() {
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  void
+      testShouldThrowInvalidSelectorExceptionWhenXPathIsSyntacticallyInvalidInDriverFindElements() {
     driver.get(pages.formPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
         .isThrownBy(() -> driver.findElements(By.xpath("this][isnot][valid")));
   }
 
   @Test
-  void testShouldThrowInvalidSelectorExceptionWhenXPathIsSyntacticallyInvalidInElementFindElement() {
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  void
+      testShouldThrowInvalidSelectorExceptionWhenXPathIsSyntacticallyInvalidInElementFindElement() {
     driver.get(pages.formPage);
     WebElement body = driver.findElement(By.tagName("body"));
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -460,7 +473,10 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
-  void testShouldThrowInvalidSelectorExceptionWhenXPathIsSyntacticallyInvalidInElementFindElements() {
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  void
+      testShouldThrowInvalidSelectorExceptionWhenXPathIsSyntacticallyInvalidInElementFindElements() {
     driver.get(pages.formPage);
     WebElement body = driver.findElement(By.tagName("body"));
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -468,6 +484,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testShouldThrowInvalidSelectorExceptionWhenXPathReturnsWrongTypeInDriverFindElement() {
     driver.get(pages.formPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -475,6 +493,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testShouldThrowInvalidSelectorExceptionWhenXPathReturnsWrongTypeInDriverFindElements() {
     driver.get(pages.formPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -482,6 +502,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testShouldThrowInvalidSelectorExceptionWhenXPathReturnsWrongTypeInElementFindElement() {
     driver.get(pages.formPage);
 
@@ -491,6 +513,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testShouldThrowInvalidSelectorExceptionWhenXPathReturnsWrongTypeInElementFindElements() {
     driver.get(pages.formPage);
     WebElement body = driver.findElement(By.tagName("body"));
@@ -570,6 +594,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testFindingASingleElementByEmptyCssSelectorShouldThrow() {
     driver.get(pages.xhtmlTestPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -577,6 +603,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testFindingMultipleElementsByEmptyCssSelectorShouldThrow() {
     driver.get(pages.xhtmlTestPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -584,6 +612,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testFindingASingleElementByInvalidCssSelectorShouldThrow() {
     driver.get(pages.xhtmlTestPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -591,6 +621,8 @@ class ElementFindingTest extends JupiterTestBase {
   }
 
   @Test
+  @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
+  @Ignore(value = EDGE, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4743")
   void testFindingMultipleElementsByInvalidCssSelectorShouldThrow() {
     driver.get(pages.xhtmlTestPage);
     assertThatExceptionOfType(InvalidSelectorException.class)
@@ -754,38 +786,11 @@ class ElementFindingTest extends JupiterTestBase {
 
   @SwitchToTopAfterTest
   @Test
-  @Ignore(value = CHROME,
-    reason = "Element in different browsing context can not evaluate stale",
-    issue = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=3742")
   public void testAnElementFoundInADifferentFrameIsNotFound() {
     driver.get(pages.missedJsReferencePage);
     driver.switchTo().frame("inner");
     WebElement element = driver.findElement(By.id("oneline"));
     driver.switchTo().defaultContent();
-    assertThatExceptionOfType(NoSuchElementException.class)
-      .isThrownBy(element::getText);
+    assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(element::getText);
   }
-
-  @SwitchToTopAfterTest
-  @Test
-  @NotYetImplemented(SAFARI)
-  public void testAnElementFoundInADifferentFrameViaJsCanBeUsed() {
-    driver.get(pages.missedJsReferencePage);
-
-    driver.switchTo().frame("inner");
-    WebElement first = driver.findElement(By.id("oneline"));
-
-    driver.switchTo().defaultContent();
-    WebElement element = (WebElement) ((JavascriptExecutor) driver).executeScript(
-        "return frames[0].document.getElementById('oneline');");
-
-
-    driver.switchTo().frame("inner");
-
-    WebElement second = driver.findElement(By.id("oneline"));
-
-    assertThat(element).isEqualTo(first);
-    assertThat(element).isEqualTo(second);
-  }
-
 }

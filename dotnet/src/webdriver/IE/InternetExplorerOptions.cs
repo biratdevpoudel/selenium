@@ -18,8 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using OpenQA.Selenium.Remote;
 
 namespace OpenQA.Selenium.IE
 {
@@ -92,6 +90,7 @@ namespace OpenQA.Selenium.IE
         private const string EdgeExecutablePathCapability = "ie.edgepath";
         private const string LegacyFileUploadDialogHandlingCapability = "ie.useLegacyFileUploadDialogHandling";
         private const string AttachToEdgeChromeCapability = "ie.edgechromium";
+        private const string IgnoreProcessMatchCapability = "ie.ignoreprocessmatch";
 
         private bool ignoreProtectedModeSettings;
         private bool ignoreZoomLevel;
@@ -105,6 +104,7 @@ namespace OpenQA.Selenium.IE
         private bool enableFullPageScreenshot = true;
         private bool legacyFileUploadDialogHandling;
         private bool attachToEdgeChrome;
+        private bool ignoreProcessMatch;
         private TimeSpan browserAttachTimeout = TimeSpan.MinValue;
         private TimeSpan fileUploadDialogTimeout = TimeSpan.MinValue;
         private string initialBrowserUrl = string.Empty;
@@ -140,6 +140,7 @@ namespace OpenQA.Selenium.IE
             this.AddKnownCapabilityName(LegacyFileUploadDialogHandlingCapability, "LegacyFileUploadDialogHanlding property");
             this.AddKnownCapabilityName(AttachToEdgeChromeCapability, "AttachToEdgeChrome property");
             this.AddKnownCapabilityName(EdgeExecutablePathCapability, "EdgeExecutablePath property");
+            this.AddKnownCapabilityName(IgnoreProcessMatchCapability, "IgnoreProcessMatch property");
         }
 
         /// <summary>
@@ -310,6 +311,15 @@ namespace OpenQA.Selenium.IE
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether to ignore process id match with IE Mode on Edge.
+        /// </summary>
+        public bool IgnoreProcessMatch
+        {
+            get { return this.ignoreProcessMatch; }
+            set { this.ignoreProcessMatch = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the path to the Edge Browser Executable.
         /// </summary>
         public string EdgeExecutablePath
@@ -440,6 +450,11 @@ namespace OpenQA.Selenium.IE
             if (this.attachToEdgeChrome)
             {
                 internetExplorerOptionsDictionary[AttachToEdgeChromeCapability] = true;
+            }
+
+            if (this.ignoreProcessMatch)
+            {
+                internetExplorerOptionsDictionary[IgnoreProcessMatchCapability] = true;
             }
 
             if (!string.IsNullOrEmpty(this.edgeExecutablePath))

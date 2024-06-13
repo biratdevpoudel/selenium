@@ -15,12 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using OpenQA.Selenium.DevTools.V85.Log;
+using System.Threading.Tasks;
 
 namespace OpenQA.Selenium.DevTools.V85
 {
@@ -32,7 +28,7 @@ namespace OpenQA.Selenium.DevTools.V85
         private LogAdapter adapter;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="V86Log"/> class.
+        /// Initializes a new instance of the <see cref="V85Log"/> class.
         /// </summary>
         /// <param name="adapter">The adapter for the Log domain.</param>
         public V85Log(LogAdapter adapter)
@@ -47,7 +43,7 @@ namespace OpenQA.Selenium.DevTools.V85
         /// <returns>A task that represents the asynchronous operation.</returns>
         public override async Task Enable()
         {
-            await adapter.Enable();
+            await adapter.Enable().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -56,7 +52,7 @@ namespace OpenQA.Selenium.DevTools.V85
         /// <returns>A task that represents the asynchronous operation.</returns>
         public override async Task Disable()
         {
-            await adapter.Disable();
+            await adapter.Disable().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -65,7 +61,7 @@ namespace OpenQA.Selenium.DevTools.V85
         /// <returns>A task that represents the asynchronous operation.</returns>
         public override async Task Clear()
         {
-            await adapter.Clear();
+            await adapter.Clear().ConfigureAwait(false);
         }
 
         private void OnAdapterEntryAdded(object sender, Log.EntryAddedEventArgs e)

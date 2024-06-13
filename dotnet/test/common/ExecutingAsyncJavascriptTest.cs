@@ -1,5 +1,5 @@
-using System;
 using NUnit.Framework;
+using System;
 using System.Collections.ObjectModel;
 
 namespace OpenQA.Selenium
@@ -118,6 +118,7 @@ namespace OpenQA.Selenium
         }
 
         [Test]
+        [IgnoreBrowser(Browser.Chrome, "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4525")]
         public void ShouldBeAbleToReturnArraysOfWebElementsFromAsyncScripts()
         {
             driver.Url = ajaxyPage;
@@ -274,7 +275,7 @@ namespace OpenQA.Selenium
         }
 
         [Test]
-		public void ThrowsIfScriptTriggersAlert()
+        public void ThrowsIfScriptTriggersAlert()
         {
             driver.Url = simpleTestPage;
             driver.Manage().Timeouts().AsynchronousJavaScript = TimeSpan.FromSeconds(5);

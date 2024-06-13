@@ -16,12 +16,12 @@
 // limitations under the License.
 // </copyright>
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Globalization;
 using Newtonsoft.Json;
 using OpenQA.Selenium.Internal;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace OpenQA.Selenium
 {
@@ -40,7 +40,7 @@ namespace OpenQA.Selenium
         private bool isHttpOnly;
         private bool secure;
         private DateTime? cookieExpiry;
-        private readonly string[] sameSiteValues = {"Strict", "Lax", "None"};
+        private readonly string[] sameSiteValues = { "Strict", "Lax", "None" };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Cookie"/> class with a specific name and value.

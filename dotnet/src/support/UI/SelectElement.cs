@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using OpenQA.Selenium.Internal;
 
 namespace OpenQA.Selenium.Support.UI
 {
@@ -446,7 +445,8 @@ namespace OpenQA.Selenium.Support.UI
 
         private static void SetSelected(IWebElement option, bool select)
         {
-            if (select && !option.Enabled) {
+            if (select && !option.Enabled)
+            {
                 throw new InvalidOperationException("You may not select a disabled option");
             }
 
